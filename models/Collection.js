@@ -39,13 +39,36 @@ module.exports = function(db){
 		}, (err, result) => {
 			if(err)
 				return setImmediate(() => callback(err));
+						
+			if(result != null)
+				return setImmediate(() => callback(null, result));
 			
-			if(result == null)
-				return setImmediate(() => callback(new Error('User ' + userId + ' has no default collection')));
-			
-			setImmediate(() => callback(null, result));
+			createDefault(userId, callback);		
 		});
 	}
 	
 	this.getDefault = getDefault;
+	
+	function createDefault(userId, callback){
+		var date = (new Date()).toISOString().slice(0,19).replace('T',' ');
+		
+		db.query('INSERT INTO `collections` (user_id, is_default, name, created, modified, is_deleted) VALUES (?, 1, ?, ?, ?, 0)', [
+			userId,
+			'default',
+			date,
+			date
+		], function(err, res){
+			if(err)
+				return setImmediate(() => {
+					callback(err);
+				});
+				
+			setImmediate(() => {
+				callback(null, {
+					id: res.insertId
+				});
+			});
+		});
+	}
 }
+
