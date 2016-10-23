@@ -35,13 +35,15 @@ module.exports = function(connection, app, passport){
 					});
 				});
 			
-			User.create(req.body, (err, userId) => {
+			User.create(req.body, (err, user) => {
 				if(err){
 					console.log(err);
 					return setImmediate(() => {
 						res.sendStatus(500);
 					});
 				}
+				
+				var userId = user.id;
 				
 				User.findById(userId, (err, user) => {
 					if(err){

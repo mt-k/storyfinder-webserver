@@ -100,7 +100,10 @@ passport.use(new LocalStrategy(
 ));
 
 passport.serializeUser(function(user, done) {
-	done(null, user.id);
+	if(user == null)
+		done(null, null);
+	else
+		done(null, user.id);
 });
 
 passport.deserializeUser(function(id, done) {
