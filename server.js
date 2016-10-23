@@ -9,8 +9,8 @@ var express = require('express')
 	, port = 3055
 	, mysql = require('mysql')
 	, connection = mysql.createConnection({
-		host     : "mysql",
-		port: 3306,
+		host     : process.env.MYSQL_HOST || "mysql",
+		port	 : process.env.MYSQL_PORT || 3306,
 		user     : process.env.MYSQL_USER || 'storyfinder',
 		password : process.env.MYSQL_PASSWORD || 'storyfinder',
 		database : process.env.MYSQL_DATABASE || 'storyfinder',
@@ -26,11 +26,51 @@ var express = require('express')
 	, User = new (require('./models/User.js'))(connection)
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
 	, exphbs  = require('express-handlebars')
+	, tables = {'articles': true,'articles_entities': true,'articles_tokens': true,'changelogs': true,'changelogs_updates': true,'collections': true,'entities': true,'entities_sentences': true,'log_entities': true,'ngrams': true,'relations': true,'relations_sentences': true,'relationtypes': true,'sentences': true,'sites': true,'tokens': true,'users': true,'visits': true}
 	;
 
+function startServer(){
+	http.listen(port, function () {
+		console.log('Storyfinder listening on port ' + port);
+	});
+}
+
 /*
-Middleware	
+Initialise database.
 */
+connection.query('SHOW TABLES', (err, result, fields) => {
+	if(err){
+		throw err;
+		return;
+	}
+	
+	var fieldName = fields[0].name;
+	
+	for(var row of result) {
+		var tbl = row[fieldName];
+		
+		if(typeof tables[tbl] !== 'undefined')
+			delete tables[tbl];
+	}
+	
+	if(!_.isEmpty(tables)){
+		console.log('Some database tables are missing. Creating tables ' + _.keys(tables).join("\n"));
+		fs.readFile('./data/sql/schema.sql', (err, content) => {
+			if(err){
+				throw err;
+				return;
+			}
+			
+			var queries = content.toString().split("\n\n");
+			
+			async.each(queries, (query, nextQuery) => {
+				connection.query(query, nextQuery);
+			}, startServer);
+		});
+	}else{	
+		setImmediate(startServer);
+	}
+});
 
 /*
 Authentication	
@@ -127,8 +167,4 @@ app.get('/', ensureLoggedIn('/login'), function (req, res) {
 			res.send(html.toString().replace(/\{\{style\}\}/, style.toString()));
 		});
 	});
-});
-
-http.listen(port, function () {
-	console.log('Storyfinder listening on port ' + port);
 });
