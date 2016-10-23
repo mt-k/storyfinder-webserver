@@ -1,0 +1,542 @@
+-moz-user-select: -moz-none;
+-khtml-user-select: none;
+-webkit-user-select: none;
+
+/*
+ Introduced in IE 10.
+ See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+*/
+-ms-user-select: none;
+user-select: none;
+
+.background rect {
+	transition: fill 1s ease;
+}
+
+.delete-target {
+	opacity: 0;
+	fill: #999;
+	
+	&.dragover {
+		fill: #A70000;	
+	}
+}
+
+.add-target {
+	fill: #ffc107;
+		
+	filter:url(#dropshadow);
+	cursor: pointer;
+	
+	path:last-child {
+		transform-origin: 12px 12px;
+		transition: transform 0.3s ease;
+	}
+	
+	&:hover {
+		fill: #ffa000;
+		path:last-child {
+			transform-origin: 12px 12px;
+			transform: scale(1.3) rotate(180deg);
+		}
+	}
+}
+
+fill: #FFFFFF;
+
+.link {
+	stroke: #999;
+	stroke-width: 1px;
+	stroke-opacity: 1;
+	fill: none;
+	
+	transition: stroke-width 0.5s ease;
+	transition-property: stroke-width fill;
+	
+	/*&.ORG-ORG {
+		stroke: extract(@colors, 1);
+	}
+	
+	&.OTH-OTH {
+		stroke: extract(@colors, 3);
+	}
+	
+	&.PER-PER {
+		stroke: extract(@colors, 6);
+	}
+	
+	&.LOC-LOC {
+		stroke: extract(@colors, 9);
+	}*/
+	
+	&.is-hidden {
+		stroke-width: 0;
+	}
+	
+	text {
+		text-anchor: middle;
+		stroke: none;
+		fill: #555555;
+		font-size: 70%;
+		
+		textPath {
+			spacing: auto;
+		}
+	}
+}
+
+.node {
+	fill: none;
+}
+
+.typed-label(@type, @idx){
+	> circle {
+		stroke: none;
+		fill: #8BC34A;
+		stroke-width: 0px;
+		transition: stroke-width 0.7s ease;
+
+		stroke: #FFFFFF;
+		stroke-width: 1px;
+	}
+	
+	@n: ~'.type-@{type}';
+	
+	&@{n} {
+		> circle {
+			fill: extract(@colors, @idx);
+			stroke: extract(@colors3, @idx);
+			stroke-width: 0px;
+		}
+		
+		&.has-more {
+			> circle {
+				stroke-width: 1px;
+			}
+		}
+		
+		.more > circle {
+			fill: extract(@colors3, @idx);
+		}
+		
+		.more-stacked {
+			> circle:last-child {
+				fill: darken(extract(@colors2, @idx), 10%);
+				stroke: darken(extract(@colors3, @idx), 10%);
+			}
+			
+			> circle:first-child {
+				transition: transform 0.7s ease;
+				transition: fill 0.7s ease;
+				fill: darken(extract(@colors2, @idx), 30%);
+				stroke: darken(extract(@colors3, @idx), 30%);
+			}
+		}
+		
+		&.dragover {
+			> circle {
+				fill: extract(@colors3, @idx) !important;
+			}
+		}
+	}
+}
+		
+.label {
+	text {
+		transition: fill 1s ease;
+		fill: #FFFFFF;
+		text-anchor: middle;
+		font-size: 8px;
+		font-family: "Roboto Condensed";
+		font-weight: 300;
+		text-anchor: middle;
+		pointer-events: none;
+		transition: transform 0.5s ease;
+		transition-property: transform fill;
+	}
+	
+	/*rect {
+		transition: fill 1s ease;
+		stroke: none;
+		fill: rgba(0, 0, 0, 0.5) !important;
+	}*/
+	
+	> circle {
+		transition: transform 0.5s ease;
+		transition-property: transform fill;
+		fill: #8BC34A;
+		transition: stroke-width 0.7s ease;
+	}
+	
+	> .card {
+		opacity: 0;
+		pointer-events: none;
+	}
+	
+	.typed-label(ORG, @ORG);
+	.typed-label(OTH, @OTH);
+	.typed-label(PER, @PER);
+	.typed-label(LOC, @LOC);
+	.typed-label(KEY, @KEY);
+	
+	.more-stacked {
+		opacity: 0;
+	}
+	
+	&.has-more {
+		.more-stacked {
+			opacity: 1;
+			
+			> circle:first-child {
+				transform: translate(-6px, -4px) scale(0.9);
+			}
+			
+			> circle:last-child {
+				transform: translate(-3px, -2px) scale(0.95);
+			}
+		}
+		
+		/*.ctrls {
+			.expand {
+				opacity: 1;
+			}
+		}*/
+	}
+	
+	.ctrls {
+		.expand {
+			opacity: 1;
+		}
+	}
+	
+	.more {
+		opacity: 0;
+	}
+	
+	&:not(.has-more){
+		.more-stacked {
+			opacity: 0;
+		}
+		
+		.ctrls {
+			.expand {
+				opacity: 1;
+			}
+		}
+	}
+	
+	.more > text {
+		fill: #222222;
+		text-anchor: bottom;
+		font-size: 7px;
+		font-family: "Roboto Condensed";
+		font-weight: 300;
+		text-anchor: middle;
+	}
+}
+
+.typed-selected-svg(@type, @idx) {
+	@m: ~'.selected-@{type}';
+	
+	&@{m} {
+		.link {
+			&.selection-neighbour {
+				stroke: extract(@colors2, @idx) !important;	
+				
+				&.linkover {
+					stroke: #00BCD4 !important;
+				}
+			}
+		}
+		
+		.label {
+			&.selection-neighbour {
+				circle {
+					stroke: extract(@colors2, @idx);
+				}
+			}
+		}
+	}
+	
+	@n: ~'.type-@{type}';
+		
+	.label.selected {
+		&@{n} {
+			> circle {
+				stroke: extract(@colors2, @idx);
+			}
+			
+			> .card {
+				> .background {
+					fill: extract(@colors, @idx);
+				}
+				
+				&.dragging {
+					> .background {
+						fill: extract(@colors3, @idx);
+					}
+				}
+				
+				> .titlebar {
+					fill: extract(@colors2, @idx);
+				}
+				
+				> .subtitle {
+					fill: extract(@colors3, @idx);
+				}
+				
+				.close-card {
+					cursor: pointer;
+					
+					text {
+						fill: extract(@colors3, @idx);
+						pointer-events: all;
+					}
+					
+					&:hover {
+						text {
+							fill: #FFFFFF;
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	.label.highlighted {
+		&@{n} {
+			> circle {
+				stroke: extract(@colors2, @idx);
+				fill: extract(@colors, @idx) !important;
+			}
+		}
+	}
+		
+	.label.selection-neighbour, label.selected {
+		&@{n} {
+			> circle {
+				fill: extract(@colors, @idx);
+			}
+		}
+	}
+}
+
+&.grayscale, &.node-selected {
+	.label:not(.focused):not(.selected):not(.selection-neighbour) {
+		> circle {
+			fill: #999999;
+		}
+		
+		text {
+			fill: #d7d7d7;
+		}
+	}
+	
+	.typed-selected-svg(ORG, @ORG);
+	.typed-selected-svg(PER, @PER);
+	.typed-selected-svg(OTH, @OTH);
+	.typed-selected-svg(LOC, @LOC);
+	.typed-selected-svg(KEY, @KEY);
+
+	.label {
+		&.selected {
+			> circle {
+				stroke-width: 3px;
+				stroke: extract(@colors, 11);
+				opacity: 0;
+				fill: none;
+				pointer-events: none;
+			}
+			
+			> .more, > .more-stacked, > .caption {
+				pointer-events: none;
+			}
+						
+			> .card {
+				opacity: 1;
+				pointer-events: auto;
+				
+				> .background {
+					filter:url(#dropshadow);
+				}
+				
+				> .title {
+					fill: #FFFFFF;
+					text-anchor: start;
+					font-size: 12px;
+					pointer-events: none;
+				}
+				
+				> .subtitle {
+					fill: #FF0000;
+					text-anchor: start;
+					pointer-events: none;
+				}
+				
+				.close-card {					
+					rect {
+						pointer-events: all;
+						fill: none;
+					}
+					
+					text {
+						font-family: 'FontAwesome';
+						font-size: 16px;
+					}
+				}
+				
+				> .ctrls {
+					.active {
+						circle {
+							transform: scale(1.3);
+							fill: #B2EBF2;
+						}
+						
+						text {
+							fill: #212121;
+							transform: rotate(360deg) scale(1.3);
+						}
+					}
+								
+					circle {
+						transition: transform 0.5s ease;
+						fill: #00bcd4;
+						filter:url(#dropshadow);
+						cursor: pointer;
+					}
+					
+					text {
+						transition: transform 0.5s ease;
+						font-family: 'Material Icons';
+						font-size: 20px;
+						pointer-events: none;
+					}
+				}
+			}
+			
+			> .caption {
+				opacity: 0;
+				fill: none;
+				pointer-events: none;
+			}
+			
+			&.has-more {
+				> .more-stacked {
+					circle {
+						opacity: 0;
+						fill: none;
+						pointer-events: none;
+					}
+					
+					/*circle:first-child {
+						transform: translate(40px, 20px) scale(0.8);
+						stroke: none;
+						fill: #FFFFFF;
+						filter:url(#dropshadow);
+					}
+					
+					circle:last-child {
+						transform: translate(-40px, 20px) scale(0.8);
+						stroke: none;
+						fill: #FFFFFF;
+						filter:url(#dropshadow);
+					}*/
+				}
+			}
+		}
+				
+		&.selection-neighbour {
+			> circle {
+				stroke-width: 2px;
+				stroke-dasharray: 2,2;
+			}
+		}
+		
+		&.linkover {
+			> circle {
+				transform: scale(1.3) !important;
+				fill: #B2EBF2 !important;
+			}
+			
+			> text {
+				transform: rotate(360deg) scale(1.3) !important;
+				fill: #212121 !important;
+			}
+		}
+	}
+		
+	.link {
+		&.focused {
+			stroke: extract(@colors, 9);
+			stroke-width: 2px;
+		}
+		
+		&.selection-neighbour {
+			stroke-width: 2px;
+		}
+		
+		&.linkover {
+			stroke: #00BCD4 !important;
+			stroke-width: 4px;
+			stroke-dasharray: none;	
+		}
+	}
+}
+
+&.grayscale {
+	.link {
+		&:not(.focused) {
+			stroke-dasharray: 5,5;
+		}
+	}
+}
+
+&.node-selected {
+	.link {
+		.focused {
+			stroke-dasharray: 5,5;
+		}
+		
+		&:not(.selection-neighbour) {
+			stroke-dasharray: 5,5;
+		}
+	}
+}
+
+/*.label.topNode rect, .label.topNode circle {
+	transition: fill 1s ease;
+	fill: #0288D1;
+}
+
+.label.focused rect, .label.focused circle {
+	fill: #8BC34A !important;
+	filter:url(#dropshadow);
+}
+
+.label.focused text {
+	fill: #FFFFFF !important;
+}
+
+.label.highlight rect, .label.highlight circle {
+	filter:url(#dropshadow);
+}
+
+.label.selected rect, .label.selected circle {
+	filter:url(#dropshadow);
+}
+
+svg.grayscale .background rect {
+
+}
+
+svg.grayscale .label text {
+	fill: #d7d7d7;
+}
+
+svg.grayscale .label rect, svg.grayscale .label circle {
+	fill: #999999;
+}
+
+svg.grayscale .label.topNode rect, svg.grayscale .label.topNode circle {
+	fill: #999999;
+}*/
