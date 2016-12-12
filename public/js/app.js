@@ -11,6 +11,7 @@ var d3 = require('d3')
 	, tplNodeCreate = require('./templates/nodes/create.hbs')
 	, actions = require('./actions/StoryfinderActions.js')
 	, serialize = require('form-serialize')
+	, _ = require('lodash')
 	;
 
 module.exports = function(store){
@@ -23,6 +24,7 @@ module.exports = function(store){
 		, sites = []
 		, io = require('socket.io-client')()
 		, userId = store.getState().config.get('user-id')
+		, isActive = true
 		;
 	
 	var vis = new Vis(store);
@@ -633,8 +635,7 @@ module.exports = function(store){
 	            
 	        return response.json();
 	    }).then(json => {
-		    //alert('Received sites');
-		    //alert(typeof json.Sites);
+			  console.log(json.sites);
 			sites = json.Sites;
 			redrawSitelist();
 		});
@@ -679,10 +680,19 @@ module.exports = function(store){
 		document.querySelector('#site-not-relevant > .dialog-overlay').classList.remove('active');
 	}
 	
+	function activate(){
+		isActive = true;
+	}
+	
+	function deactivate(){
+		isActive = false;
+	}
+	
 	current();
 	loadSites();
 		
 	io.on('new_site', function(site){
+		if(!isActive)return false;
 		//alert('Received site');		
 		if(site.is_relevant || !site.is_new){
 			hideSiteNotRelevant();
@@ -696,10 +706,12 @@ module.exports = function(store){
 	});
 	
 	io.on('parsing_site', function(site){
+		if(!isActive)return false;
 		graphTitle.innerHTML = tplGraphtitle({loading: true});
 	});
 	
 	io.on('done_parsing_site', function(site){
+		if(!isActive)return false;
 		graphTitle.innerHTML = tplGraphtitle(store.getState().storyfinder.toJSON());
 	});
 	
@@ -734,6 +746,12 @@ module.exports = function(store){
 			break;
 			case 'not-relevant':
 				showSiteNotRelevant(event.data.data);
+			break;
+			case 'activate':
+				activate();
+			break;
+			case 'deactivate':
+				deactivate();
 			break;
 			default:
 				alert('Unknown event action: ' + event.data.action);
