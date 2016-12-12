@@ -99,6 +99,7 @@ module.exports = function(db){
 	this.getBetweenEntities = getBetweenEntities;
 	
 	function reassign(/*target, source, changelogId, callback*/){
+		console.log('Reassign relations');
 		var targetId = arguments[0]
 			, sourceId = arguments[1]
 			, changelogId = arguments[2]
@@ -107,7 +108,7 @@ module.exports = function(db){
 		
 			getByEntities([targetId, sourceId], (err, relations) => {
 				if(err)return setImmediate(() => callback(err));
-				if(_.isEmpty(relations))return setImmediate(() => callback(null, null));
+				if(_.isEmpty(relations))return setImmediate(() => callback(null, changelogId));
 				
 				var byId = {}
 				
@@ -153,7 +154,12 @@ module.exports = function(db){
 						//The target node has already a relation to this neighbour => reassign sentences
 						RelationSentence.reassign(byId[targetId][neighbourId].id, relation.id, changelogId, nextRelation);
 					}
-				}, callback);
+				}, (err) => {
+					if(err)
+						return setImmediate(() => callback(err));
+					
+					setImmediate(() => callback(null, changelogId));
+				});
 			});
 	}
 	

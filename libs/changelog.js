@@ -80,6 +80,7 @@ module.exports.update = function update(connection, userId){
 	}
 	
 	var q = 'SELECT `id`, `' + fields.join('`,`') + '` FROM `' + options.table + '` WHERE ' + where + limit;
+	//console.log(q);
 	connection.query(q, function(err, results, f){
 		if(err){
 			setImmediate(function(){callback(err);});
@@ -108,7 +109,9 @@ module.exports.update = function update(connection, userId){
 					return;
 				}
 				
-				connection.query('INSERT INTO changelogs (`created`, `user_id`) VALUES (?, ?)', [date, userId], function(err, result){
+				q = 'INSERT INTO changelogs (`created`, `user_id`) VALUES (?, ?)';
+				//console.log(q);
+				connection.query(q, [date, userId], function(err, result){
 					if(err){
 						callback(err);
 						return;
@@ -117,6 +120,7 @@ module.exports.update = function update(connection, userId){
 					var changelog_id = result.insertId;
 					
 					async.each(updates, function(update, nextUpdate){
+						//console.log('INSERT INTO changelogs_updates (`changelog_id`, `foreign_id`, `vals`, `tbl`) VALUES (' + changelog_id + ', ?, ?, ?)');
 						connection.query('INSERT INTO changelogs_updates (`changelog_id`, `foreign_id`, `vals`, `tbl`) VALUES (' + changelog_id + ', ?, ?, ?)', update, nextUpdate);
 					}, function(err){
 						if(err){
@@ -124,7 +128,7 @@ module.exports.update = function update(connection, userId){
 							return;
 						}
 						
-						console.log('UPDATE `' + options.table + '` SET ' + _.keys(options.values).join('=?, ') + '=? WHERE ' + where + limit);
+						//console.log('UPDATE `' + options.table + '` SET ' + _.keys(options.values).join('=?, ') + '=? WHERE ' + where + limit);
 						
 						connection.query('UPDATE `' + options.table + '` SET ' + _.keys(options.values).join('=?, ') + '=? WHERE ' + where + limit, _.values(options.values), function(err){
 							if(err){

@@ -29,7 +29,7 @@ module.exports = function(connection, app, passport, io){
 		, KeywordComponent = new (require('./components/KeywordComponent.js'))(Ngram, Article)
 		;
 		
-	app.get('/Sites', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Sites', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var page = _.isEmpty(req.query.page)?0:req.query.page
 			, userId = req.user.id
 			;
@@ -364,6 +364,7 @@ module.exports = function(connection, app, passport, io){
 						_mExtractKeywords,
 						_mExtractRelations,
 						_mAddSite,
+						_mPostprocess,
 						_mGetOrAddSite
 					], next);
 				});
@@ -631,6 +632,7 @@ module.exports = function(connection, app, passport, io){
 			var _entities = _.values(memo.data.Entities);
 			
 			memo.data.relations = {};
+			memo.data.merge = {};
 			
 			_entities.forEach((entity1, i) => {
 				var sentences1 = {};
@@ -659,6 +661,23 @@ module.exports = function(connection, app, passport, io){
 						if(_.isUndefined(memo.data.relations[key1]))
 							memo.data.relations[key1] = {};
 						
+						var c1 = key1.toLowerCase();
+						var c2 = key2.toLowerCase();
+						
+						if(entity1.type == 'PER' && entity2.type == 'PER'){
+							//Find related similar names, e.g. Angela Merkel + Merkel and merge them during post processing
+							if(c1.substr(c1.length - c2.length - 1) == ' ' + c2)
+								(memo.data.merge[key1] || (memo.data.merge[key1] = {}))[key2] = true;
+							else if(c2.substr(c2.length - c1.length - 1) == ' ' + c1)
+								(memo.data.merge[key2] || (memo.data.merge[key2] = {}))[key1] = true;
+						}
+						
+						//Find related similar names, e.g. Trump + Trumps or Italien + Italiens
+						if(c1 + 's' == c2)
+							(memo.data.merge[key1] || (memo.data.merge[key1] = {}))[key2] = true;
+						else if(c2 + 's' == c1)
+							(memo.data.merge[key2] || (memo.data.merge[key2] = {}))[key1] = true;
+						
 						(memo.data.relations[key1][key2] || (memo.data.relations[key1][key2] = [])).push(o.sentence);
 					});
 				}
@@ -682,10 +701,36 @@ module.exports = function(connection, app, passport, io){
 				
 				memo.changelog_id = result.changelog_id;
 				memo.data.Site.id = result.id;
-				
+
 				console.log('Site added');
 				
 				setImmediate(() => next(null, memo));
 			});
+		}
+		
+		function _mPostprocess(memo, next){
+			if(_.keys(memo.data.merge).length == 0)
+				return setImmediate(() => next(null, memo));
+			
+			async.forEachOfSeries(memo.data.merge, (sources, targetName, nextTarget) => {
+				var targetId = memo.data.Entities[targetName].id;
+				
+				async.forEachOfSeries(sources, (b, sourceName, nextSource) => {
+					var sourceId = memo.data.Entities[sourceName].id;
+					
+					console.log('Entity.merge(' + targetId + ' (' + targetName + '), ' + sourceId + ' (' + sourceName + '), ' + memo.user_id + ', ' + memo.changelog_id + ', nextSource)');
+					//setImmediate(nextSource);
+					Entity.merge(targetId, sourceId, memo.user_id, memo.changelog_id, nextSource);
+				}, (err) => {
+					console.log('Done Source');
+					nextTarget();
+				});
+			}, (err) => {
+				if(err)
+					return setImmediate(() => next(err));
+				
+				setImmediate(() => next(null, memo));
+			});
+			/*targetId, sourceId, userId,[ changelogId,]callback*/
 		}
 }

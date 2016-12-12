@@ -49,6 +49,7 @@ module.exports = function(db){
 	this.findArticlesWithEntity = findArticlesWithEntity;
 	
 	function reassign(/*target, source, changelogId, callback*/){
+		console.log('Reassign articleentity');
 		var targetId = arguments[0]
 			, sourceId = arguments[1]
 			, changelogId = arguments[2]
@@ -76,9 +77,7 @@ module.exports = function(db){
 				else
 					byId[targetId][article.article_id] = article;
 			});
-			
-			console.log(byId);
-			
+						
 			async.forEachOf(byId[sourceId], (article, article_id, nextArticle) => {
 				console.log(article_id);
 				
@@ -96,6 +95,7 @@ module.exports = function(db){
 					}, nextArticle);
 				}else{
 					console.log('update');
+					//console.log(byId[targetId][article_id].id)
 					//Target is already connected with the article => sum
 					datasource.update(changelogId, { //Sum the count of the article relation of the target node
 						values: {
@@ -108,6 +108,8 @@ module.exports = function(db){
 					}, (err) => {
 						if(err)return setImmediate(() => nextArticle(err));
 						
+						console.log('Done Article');
+						
 						datasource.update(changelogId, { //Delete the article relation of the source node
 							values: {
 								is_deleted: 1
@@ -119,7 +121,12 @@ module.exports = function(db){
 						}, nextArticle);
 					});
 				}
-			}, callback);
+			}, (err) => {
+				if(err)
+					return setImmediate(() => callback(err));
+					
+				setImmediate(() => callback(null, changelogId));
+			});
 		});
 	}
 	
