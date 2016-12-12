@@ -156,7 +156,7 @@ var UsersController = new (require('./controllers/UsersController.js'))(connecti
 	, RelationsController = new (require('./controllers/RelationsController.js'))(connection, app, passport)
 	;
  
-app.get('/', ensureLoggedIn('/login'), function (req, res) {
+app.get('/', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 	fs.readFile(__dirname + '/public/css/bootstrap.css', function(err, style){
 		if(err){
 			console.log(err);
