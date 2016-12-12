@@ -1501,6 +1501,8 @@ module.exports = function Vis(store){
 	}
 	
 	function toGlobal(callback){
+		gG.hideTemporarily();
+		
 		setData({
 			focused: false
 		});
@@ -1551,6 +1553,8 @@ module.exports = function Vis(store){
 	this.toGlobal = toGlobal;
 	
 	function focus(graph, callback){
+		gG.hideTemporarily();
+		
 		setData();
 		gG.setData(graph, true);
 		gG.rankNodes(null, null, graph);
@@ -1827,9 +1831,9 @@ module.exports = function Vis(store){
 		var el = svg.select('.label[data-id="' + nodeId + '"] > circle');
 		el.attr('r', labelRadius);
 		
-		hideNode(nodeId, true, () => {
+		/*hideNode(nodeId, true, () => {
 
-		});
+		});*/
 	}
 	
 	this.unhighlight = unhighlight;

@@ -419,6 +419,15 @@ module.exports = function(store){
 	
 	this.hide = hide;
 	
+	function hideTemporarily(){
+		for(var n in nodes){
+			if(typeof nodes[n]['showTemporarily'] != 'undefined')
+				delete nodes[n]['showTemporarily'];
+		}
+	}
+	
+	this.hideTemporarily = hideTemporarily;
+	
 	function collapse(nodeId){
 		nodes[indexMap[nodeId]].isExpanded = false;
 	}
@@ -561,6 +570,18 @@ module.exports = function(store){
 			if(_.isEmpty(remaining))continue;
 			
 			remaining.sort(function(a, b){
+				if(addFocus){
+					var aId = a.idx;
+					var bId = b.idx;
+					
+					var aFocused = !_.isUndefined(nodes[aId].focused) && nodes[aId].focused;
+					var bFocused = !_.isUndefined(nodes[bId].focused) && nodes[bId].focused;
+					
+					if(aFocused && !bFocused)
+						return -1;
+					else if(bFocused && !aFocused)
+						return 1;
+				}
 				return b.pageRank - a.pageRank;
 			});
 			
