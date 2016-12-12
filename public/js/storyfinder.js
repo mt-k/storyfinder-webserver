@@ -55335,7 +55335,9 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 
 			el.append('path').attr('class', 'click-target');
 
-			el.append('path').attr('id', 'path:' + uid);
+			/*el.append('path')
+   	.attr('id', 'path:' + uid)
+   	;*/
 
 			el.append('text').attr('dy', '-4px').append('textPath').attr('xlink:href', '#path:' + uid).attr('startOffset', '50%');
 		});
@@ -55378,7 +55380,25 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 			}
 
 			return c;
-		}).selectAll('path').attr('d', function (d) {
+		}).select('path.relation-marker').attr('d', function (d) {
+			var sx = d.source.x,
+			    sy = d.source.y,
+			    tx = d.target.x,
+			    ty = d.target.y;
+
+			if (!_.isUndefined(d.source.prevData)) {
+				sx = d.source.prevData.x;
+				sy = d.source.prevData.y;
+			}
+
+			if (!_.isUndefined(d.target.prevData)) {
+				tx = d.target.prevData.x;
+				ty = d.target.prevData.y;
+			}
+
+			return smoothLine({ x: sx, y: sy }, { x: tx, y: ty });
+		});
+		link.select('path.click-target').attr('d', function (d) {
 			var sx = d.source.x,
 			    sy = d.source.y,
 			    tx = d.target.x,
