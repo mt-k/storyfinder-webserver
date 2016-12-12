@@ -13,7 +13,7 @@ module.exports = function(connection, app, passport){
 		, Relation = new (require('../models/Relation.js'))(connection)
 		;
 	
-	app.get('/Graphs', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Graphs', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var userId = req.user.id
 
 		async.waterfall([
@@ -34,7 +34,7 @@ module.exports = function(connection, app, passport){
 		});
 	});
 	
-	app.get('/Graphs/Site/:siteId', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Graphs/Site/:siteId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var userId = req.user.id
 			, siteId = parseInt(req.params.siteId)
 			;
@@ -59,7 +59,7 @@ module.exports = function(connection, app, passport){
 		});
 	});
 	
-	app.get('/Graphs/Group/:siteIds', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Graphs/Group/:siteIds', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var userId = req.user.id
 			, siteIds = _.map(req.params.siteIds.split(';'), siteId => parseInt(siteId))
 			;

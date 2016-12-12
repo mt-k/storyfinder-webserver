@@ -12,7 +12,7 @@ module.exports = function(connection, app, passport){
 		, RelationSentence = new (require('../models/RelationSentence.js'))(connection)
 		;
 		
-	app.get('/Relations/Entity/:entityId', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Relations/Entity/:entityId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entityId = parseInt(req.params.entityId)
 			, userId = req.user.id
 			;
@@ -33,7 +33,7 @@ module.exports = function(connection, app, passport){
 		});
 	});
 	
-	app.get('/Relations/:entity1Id/:entity2Id', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Relations/:entity1Id/:entity2Id', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entity1Id = parseInt(req.params.entity1Id)
 			, entity2Id = parseInt(req.params.entity2Id)
 			, userId = req.user.id
@@ -56,7 +56,7 @@ module.exports = function(connection, app, passport){
 		});
 	});
 	
-	app.put('/Relations/:entity1Id/:entity2Id', ensureLoggedIn('/login'), function (req, res) {
+	app.put('/Relations/:entity1Id/:entity2Id', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entity1Id = parseInt(req.params.entity1Id)
 			, entity2Id = parseInt(req.params.entity2Id)
 			, data = req.body

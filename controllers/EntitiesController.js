@@ -11,7 +11,7 @@ module.exports = function(connection, app, passport){
 		, Entity = new (require('../models/Entity.js'))(connection)
 		;
 		
-	app.get('/Entities/:entityId', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Entities/:entityId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entityId = parseInt(req.params.entityId)
 			, userId = req.user.id
 			;
@@ -35,7 +35,7 @@ module.exports = function(connection, app, passport){
 	/*
 	Add a new entity
 	*/
-	app.put('/Entities', ensureLoggedIn('/login'), function (req, res) {
+	app.put('/Entities', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var userId = req.user.id
 			, data = req.body
 			;
@@ -62,7 +62,7 @@ module.exports = function(connection, app, passport){
 	/*
 	Merge entities	
 	*/
-	app.put('/Entities/:targetId/:sourceId', ensureLoggedIn('/login'), function (req, res) {
+	app.put('/Entities/:targetId/:sourceId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var targetId = parseInt(req.params.targetId)
 			, sourceId = parseInt(req.params.sourceId)
 			, userId = req.user.id
@@ -78,7 +78,7 @@ module.exports = function(connection, app, passport){
 		});
 	});
 	
-	app.delete('/Entities/:entityId', ensureLoggedIn('/login'), function (req, res) {
+	app.delete('/Entities/:entityId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entityId = req.params.entityId
 			, userId = req.user.id
 			;

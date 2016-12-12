@@ -12,7 +12,7 @@ module.exports = function(connection, app, passport){
 		, Collection = new (require('../models/Collection.js'))(connection)
 		;
 		
-	app.get('/Articles/:articleId', ensureLoggedIn('/login'), function (req, res) {
+	app.get('/Articles/:articleId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var userId = req.user.id
 			, articleId = req.params.articleId
 			;

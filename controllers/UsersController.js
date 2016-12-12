@@ -113,7 +113,7 @@ module.exports = function(connection, app, passport){
 	/*
 	Login	
 	*/
-	app.post('/login', passport.authenticate('local', { successRedirect: '/Users/status', failureRedirect: '/login' }));
+	app.post('/login', passport.authenticate('local', { successRedirect: (process.env.PATH_PREFIX || '/') + 'Users/status', failureRedirect: (process.env.PATH_PREFIX || '/') + 'login' }));
 	
 	/*
 	Return login status
@@ -136,6 +136,6 @@ module.exports = function(connection, app, passport){
 	*/
 	app.get('/logout', function(req, res){
 		req.logout();
-		res.redirect('/');
+		res.redirect((process.env.PATH_PREFIX || '/'));
 	});
 };
