@@ -8940,7 +8940,7 @@ button.close {
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;
-  src: local('Material Icons'), local('MaterialIcons-Regular'), url(https://fonts.gstatic.com/s/materialicons/v18/2fcrYFNaTjcS6g4U3t-Y5StnKWgpfO2iSkLzTz-AABg.ttf) format('truetype');
+  src: local('Material Icons'), local('MaterialIcons-Regular'), url(https://fonts.gstatic.com/s/materialicons/v19/2fcrYFNaTjcS6g4U3t-Y5StnKWgpfO2iSkLzTz-AABg.ttf) format('truetype');
 }
 .material-icons {
   font-family: 'Material Icons';
@@ -9056,8 +9056,25 @@ svg .link {
 		stroke: extract(@colors, 9);
 	}*/
 }
+svg .link .relation-marker {
+  pointer-events: none;
+}
+svg .link .click-target {
+  stroke-width: 8px;
+  stroke-opacity: 0;
+  stroke-dasharray: none;
+}
+svg .link .click-target:hover {
+  stroke-opacity: 1;
+}
 svg .link.is-hidden {
   stroke-width: 0;
+}
+svg .link.is-hidden .click-target {
+  stroke-width: 0;
+}
+svg .link.is-hidden .click-target:hover {
+  stroke-opacity: 0;
 }
 svg .link text {
   text-anchor: middle;

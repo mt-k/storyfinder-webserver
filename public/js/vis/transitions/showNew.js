@@ -88,7 +88,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			function(doneTransition){
 				var n = 0;
 				elNew.links
-					.select('path')
+					.selectAll('path')
 					.attr('d', function(d){
 						var sx = d.source.x
 							, sy = d.source.y

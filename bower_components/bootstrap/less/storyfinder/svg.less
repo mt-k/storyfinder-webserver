@@ -53,6 +53,20 @@ fill: #FFFFFF;
 	transition: stroke-width 0.5s ease;
 	transition-property: stroke-width fill;
 	
+	.relation-marker {
+		pointer-events: none;
+	}
+	
+	.click-target {
+		stroke-width: 8px;
+		stroke-opacity: 0;
+		stroke-dasharray: none;
+	}
+	
+	.click-target:hover {
+		stroke-opacity: 1;
+	}
+		
 	/*&.ORG-ORG {
 		stroke: extract(@colors, 1);
 	}
@@ -71,6 +85,14 @@ fill: #FFFFFF;
 	
 	&.is-hidden {
 		stroke-width: 0;
+		
+		.click-target {
+			stroke-width: 0;
+			
+			&:hover {
+				stroke-opacity: 0;
+			}
+		}
 	}
 	
 	text {

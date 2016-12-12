@@ -413,6 +413,11 @@ module.exports = function(store){
 		return false;
 	});
 	
+	svgDelegate.on('click', '.link > path', function(event){
+		store.dispatch(actions.toRelation(this.parentNode.getAttribute('data-sourceId'), this.parentNode.getAttribute('data-targetId')));
+		return false;
+	});
+	
 	svgDelegate.on('click', '.background', function(event){
 		vis.closeAll(function(){
 			

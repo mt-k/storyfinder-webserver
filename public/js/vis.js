@@ -340,7 +340,7 @@ module.exports = function Vis(store){
 			.attr('height', labelHeight);
 			;
 				
-		link.select('path').attr('d', function(d){
+		link.selectAll('path').attr('d', function(d){
 			return smoothLine(d.source, d.target);
 		});
 					
@@ -1123,7 +1123,7 @@ module.exports = function Vis(store){
 		/*
 		Knoten zurück verschieben, die sich um dieses Element befinden
 		*/
-		link.select('path').transition()
+		link.selectAll('path').transition()
 			.duration(transitionCard)
 			.ease('elastic')
 			.attrTween('d', function(d){			
@@ -1372,7 +1372,7 @@ module.exports = function Vis(store){
 				}
 			})
 			
-		link.select('path').transition()
+		link.selectAll('path').transition()
 			.duration(transitionCard)
 			.ease('elastic')
 			.attrTween('d', function(d){			

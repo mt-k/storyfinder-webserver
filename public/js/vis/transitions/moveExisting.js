@@ -51,7 +51,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			},
 			function(doneTransition){
 				var n = 0;
-				var transition = elExisting.links.select('path')
+				var transition = elExisting.links.selectAll('path')
 					.attr('d', function(d){
 						var sx = d.source.x
 							, sy = d.source.y

@@ -327,6 +327,15 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			
 			el.append('path')
 				.attr('id', 'path:' + uid)
+				.attr('class', 'relation-marker')
+				;
+				
+			el.append('path')
+				.attr('class', 'click-target')
+				;
+				
+			el.append('path')
+				.attr('id', 'path:' + uid)
 				;
 			
 			el.append('text')
@@ -359,6 +368,12 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			if(!_.isUndefined(elExisting.linkIds[i]) && _.isUndefined(d.isHidden))return 1;
 			return 0;
 		})
+		.attr('data-sourceId', function(d){
+			return d.source.id;
+		})
+		.attr('data-targetId', function(d){
+			return d.target.id;
+		})
 		.attr("class", function(d){
 			var c = 'link';
 			
@@ -384,7 +399,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			
 			return c;
 		})
-		.select('path')
+		.selectAll('path')
 			.attr('d', function(d){
 				var sx = d.source.x
 					, sy = d.source.y
