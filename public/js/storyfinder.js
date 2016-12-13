@@ -1046,6 +1046,17 @@ module.exports = function (store) {
 		graphTitle.innerHTML = tplGraphtitle(store.getState().storyfinder.toJSON());
 	});
 
+	io.on('new_entity', function (data) {
+		if (!isActive) return false;
+
+		if (typeof parent != 'undefined' && parent != null) {
+			parent.postMessage(["msg", {
+				action: 'newEntity',
+				data: data
+			}], "*");
+		}
+	});
+
 	/*
  Plugin Events	
  */

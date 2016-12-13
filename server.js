@@ -151,7 +151,7 @@ app.set('view engine', 'handlebars');
 var UsersController = new (require('./controllers/UsersController.js'))(connection, app, passport)
 	, GraphsController = new (require('./controllers/GraphsController.js'))(connection, app, passport)
 	, SitesController = new (require('./controllers/SitesController.js'))(connection, app, passport, io)
-	, EntitiesController = new (require('./controllers/EntitiesController.js'))(connection, app, passport)
+	, EntitiesController = new (require('./controllers/EntitiesController.js'))(connection, app, passport, io)
 	, ArticlesController = new (require('./controllers/ArticlesController.js'))(connection, app, passport)
 	, RelationsController = new (require('./controllers/RelationsController.js'))(connection, app, passport)
 	;

@@ -4,7 +4,7 @@ var _ = require('lodash')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
 	;
 	
-module.exports = function(connection, app, passport){
+module.exports = function(connection, app, passport, io){
 	var User = new (require('../models/User.js'))(connection)
 		, Site = new (require('../models/Site.js'))(connection)
 		, Collection = new (require('../models/Collection.js'))(connection)
@@ -50,7 +50,12 @@ module.exports = function(connection, app, passport){
 				console.log(err);
 				return setImmediate(() => res.sendStatus(500));
 			}
-						
+			
+			io.emit('new_entity', {
+				nodes: [result.result.Entity],
+				links: result.result.Relations
+			});
+			
 			res.send({
 				changelog_id: result.changelog_id,
 				nodes: [result.result.Entity],
