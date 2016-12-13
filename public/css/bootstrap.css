@@ -9068,7 +9068,7 @@ svg .link .click-target:hover {
   stroke-opacity: 1;
 }
 svg .link.is-hidden {
-  stroke-width: 0;
+  stroke-width: 0 !important;
 }
 svg .link.is-hidden .click-target {
   stroke-width: 0;
