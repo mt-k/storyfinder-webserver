@@ -1186,7 +1186,7 @@ module.exports = function Vis(store){
 	
 	this.closeNode = closeNode;
 	
-	function selectNode(el){
+	function selectNode(el, transitionTime){
 		var node = d3.select(el)
 		, nodeData = node.datum()
 		;
@@ -1201,7 +1201,7 @@ module.exports = function Vis(store){
 			return false;
 		}
 		
-		openNode(el, node, nodeData);
+		openNode(el, node, nodeData, transitionTime);
 	}
 	
 	this.selectNode = selectNode;
@@ -1209,10 +1209,10 @@ module.exports = function Vis(store){
 	/*
 	Open a node in the sidebar	
 	*/
-	function openNode(el, node, nodeData){
+	function openNode(el, node, nodeData, transitionTime){
 		if(!_.isNull(d3cola))
 			d3cola.stop();
-								
+		
 		var idx = 0
 			, color = '#FFFFFF' //colors3[typeColors[nodeData.type]] //?'#0288D1':'#8BC34A'
 			, color2 = colors[typeColors[nodeData.type]] //?'#0288D1':'#8BC34A'
@@ -1311,7 +1311,7 @@ module.exports = function Vis(store){
 		label
 			.transition()
 			.ease('elastic')
-			.duration(transitionCard)
+			.duration(_.isUndefined(transitionTime)?transitionCard:transitionTime)
 			.attrTween('transform', function(d, i, a){
 				var x = [d.x, d.x]
 					, y = [d.y, d.y]
@@ -1373,7 +1373,7 @@ module.exports = function Vis(store){
 			})
 			
 		link.selectAll('path').transition()
-			.duration(transitionCard)
+			.duration(_.isUndefined(transitionTime)?transitionCard:transitionTime)
 			.ease('elastic')
 			.attrTween('d', function(d){			
 				var sx = [d.source.x, d.source.tx]
@@ -1813,6 +1813,14 @@ module.exports = function Vis(store){
 	
 	this.hideNode = hideNode;
 		
+	function showDetailsForId(nodeId, callback){
+		//var el = svg.select('.label[data-id="' + nodeId + '"]');
+		selectNode('.label[data-id="' + nodeId + '"]');
+		showDetails('.label[data-id="' + nodeId + '"]', callback);
+	}
+	
+	this.showDetailsForId = showDetailsForId;
+			
 	function highlight(nodeId){
 		var el = svg.select('.label[data-id="' + nodeId + '"] > circle');
 				

@@ -226,6 +226,29 @@ module.exports = function(db){
 	
 	this.findByValue = findByValue;
 	
+	function search(/*value, collectionId, callback*/){
+		var value = arguments[0]
+			, collectionId = arguments[1]
+			, callback = arguments[arguments.length - 1]
+			;
+		
+		datasource.find('all', {
+			fields: ['id', 'master_id', 'multiword', 'value', 'caption', 'type', 'show_always'],
+			conditions: {
+				"value LIKE": '%' + value + '%',
+				is_deleted: 0,
+				collection_id: collectionId
+			},
+			limit: 8
+		}, (err, entities) => {
+			if(err)return setImmediate(() => callback(err));
+			
+			setImmediate(() => callback(null, entities));
+		});
+	}
+	
+	this.search = search;
+	
 	function add(memo, next){
 		async.eachOfSeries(memo.data.Entities, (entity, key, nextEntity) => {
 			if(!_.isUndefined(entity.id))return setImmediate(nextEntity);

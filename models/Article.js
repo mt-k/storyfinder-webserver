@@ -230,6 +230,49 @@ module.exports = function(db){
 	
 	this.findWithToken = findWithToken;
 	
+	function search(/*value, collectionId, callback*/){
+		var value = arguments[0]
+			, collectionId = arguments[1]
+			, callback = arguments[arguments.length - 1]
+			;
+		
+		datasource.find('all', {
+			fields: ['id', 'site_id', 'created'],
+			conditions: {
+				'text LIKE': '%' + value + '%',
+				is_deleted: 0
+			},
+			order: 'created DESC',
+			group: 'site_id',
+			limit: 8
+		}, (err, articles) => {
+			if(err)return setImmediate(() => callback(err));
+			
+			Sentence.findWithText(value, {
+				articles: _.map(articles, 'id')
+			}, (err, sentences) => {
+				if(err)return setImmediate(() => next(err));
+				
+				var sentencesByArticle = {};
+				
+				_.each(sentences, (sentence) => {
+					(sentencesByArticle[sentence.article_id] || (sentencesByArticle[sentence.article_id] = [])).push(sentence);
+				});
+				
+				for(var article of articles){
+					article.Sentences = null;
+					if(!_.isUndefined(sentencesByArticle[article.id])){
+						article.Sentences = sentencesByArticle[article.id];
+					}
+				}
+													
+				setImmediate(() => callback(null, articles));
+			});
+		});
+	}
+	
+	this.search = search;
+	
 	/*
 		Memo functions	
 	*/

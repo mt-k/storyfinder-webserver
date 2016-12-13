@@ -86,6 +86,44 @@ module.exports = function(db){
 	
 	this.findWithEntity = findWithEntity;
 	
+	function findWithText(/*text, oiptions, callback*/){
+		var text = arguments[0]
+			, options = {
+				articles: null, //Scope
+			}
+			, callback = arguments[arguments.length - 1]
+			, conditions = {
+				'text LIKE': '%' + text + '%',
+				is_deleted: 0
+			}
+			;
+		
+		if(arguments.length > 2)
+			options = _.defaults(arguments[1], options);
+		
+		if(!_.isEmpty(options.articles))
+			conditions.article_id = options.articles;
+	
+		datasource.find('all', {
+			fields: ['id', 'text', 'article_id'],
+			conditions: conditions,
+			order: 'id'
+		}, (err, candidates) => {
+			if(err)return setImmediate(() => callback(err));
+			if(_.isEmpty(candidates))return setImmediate(() => callback(null, []));
+			
+			setImmediate(() => callback(null, candidates));
+			
+			/*_mHighlight({sentences: candidates, options: {highlight: [entity]}}, (err, memo) => {
+				if(err)return setImmediate(() => callback(err));
+				
+				setImmediate(() => callback(null, memo.sentences));
+			});*/
+		});
+	}
+	
+	this.findWithText = findWithText;
+	
 	function findById(/*sentenceIds,[ options,]callback*/){
 		var sentenceIds = arguments[0]
 			, options = {

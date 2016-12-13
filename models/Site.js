@@ -54,11 +54,12 @@ module.exports = function(db){
 	
 	function findById(id, callback){		
 		datasource.find(_.isArray(id)?'all':'first', {
-			fields: ['id', 'url', 'host', 'title', 'favicon', 'collection_id', 'created', 'last_visited'],
+			fields: ['id', 'url', 'host', 'title', 'favicon', 'collection_id', 'created', 'last_visited', 'primary_color'],
 			conditions: {
 				id: id,
 				is_deleted: 0
-			}
+			},
+			order: ['created DESC', 'id DESC']
 		}, (err, result) => {
 			if(err)
 				return setImmediate(() => callback(err));
@@ -269,6 +270,39 @@ module.exports = function(db){
 	}
 	
 	this.setColor = setColor;
+	
+	function search(/*value, collectionId, callback*/){
+		var value = arguments[0]
+			, collectionId = arguments[1]
+			, callback = arguments[arguments.length - 1]
+			;
+		
+		Article.search(value, collectionId, (err, articles) => {
+			if(err)
+				return setImmediate(() => callback(err));
+			
+			var siteIds = {};
+			_.each(articles, (article) => {
+				siteIds[article.site_id] = article;
+			});
+			
+			if(_.isEmpty(siteIds))
+				return setImmediate(() => callback(null, []));
+				
+			findById(_.keys(siteIds), (err, sites) => {
+				if(err)
+					return setImmediate(() => callback(err));
+				
+				for(var site of sites){
+					site.Article = siteIds[site.id];
+				}
+				
+				setImmediate(() => callback(null, sites));
+			});
+		});
+	}
+	
+	this.search = search;
 	
 	/*
 		Memo functions	

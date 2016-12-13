@@ -407,7 +407,11 @@ module.exports = function(store){
 	this.expand = expand;
 	
 	function show(nodeId, isTemporarily){
-		nodes[indexMap[nodeId]][isTemporarily?'showTemporarily':'show'] = true;
+		if(!_.isUndefined(indexMap[nodeId]) && !_.isUndefined(nodes[indexMap[nodeId]])){
+			nodes[indexMap[nodeId]][isTemporarily?'showTemporarily':'show'] = true;
+		}else{
+			console.log(indexMap);
+		}
 	}
 	
 	this.show = show;

@@ -11,6 +11,50 @@ module.exports = function(connection, app, passport, io){
 		, Entity = new (require('../models/Entity.js'))(connection)
 		;
 		
+	/*
+	Search for sites and entities containing the string specified by query parameter 'q'	
+	*/
+	app.get('/Entities/search', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
+		var search = req.query.q
+			, userId = req.user.id
+			;
+		
+		async.waterfall([
+			(next) => {setImmediate(() => next(null, {user_id: userId, search: search}))},
+			_mGetCollection, //Get the id of user's default collection
+			(memo, next) => {
+				Entity.search(memo.search, memo.Collection.id, (err, results) => {
+					if(err)
+						return setImmediate(() => next(err));
+					
+					memo.Entities = results;
+					setImmediate(() => next(null, memo));
+				});
+			},
+			(memo, next) => {
+				Site.search(memo.search, memo.Collection.id, (err, results) => {
+					if(err)
+						return setImmediate(() => next(err));
+					
+					memo.Sites = results;
+					setImmediate(() => next(null, memo));
+				});
+			}
+			/*,
+			sites: (next) => {
+				Site.search(search, next);
+			}*/
+		], (err, results) => {
+			if(err){
+				console.log(err);
+				return setImmediate(() => res.sendStatus(500));
+			}
+			
+			console.log(results);
+			res.send(results);
+		});
+	});
+		
 	app.get('/Entities/:entityId', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
 		var entityId = parseInt(req.params.entityId)
 			, userId = req.user.id
@@ -31,7 +75,7 @@ module.exports = function(connection, app, passport, io){
 			res.send(result);
 		});
 	});
-	
+			
 	/*
 	Add a new entity
 	*/
@@ -97,7 +141,7 @@ module.exports = function(connection, app, passport, io){
 			res.send(result);
 		});
 	});
-	
+		
 	/*
 		Memo functions	
 	*/

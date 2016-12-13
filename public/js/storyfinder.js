@@ -327,6 +327,7 @@ var d3 = require('d3'),
     tplNodeCreate = require('./templates/nodes/create.hbs'),
     actions = require('./actions/StoryfinderActions.js'),
     serialize = require('form-serialize'),
+    Search = require('./search.js'),
     _ = require('lodash');
 
 module.exports = function (store) {
@@ -339,9 +340,9 @@ module.exports = function (store) {
 	    sites = [],
 	    io = require('socket.io-client')(),
 	    userId = store.getState().config.get('user-id'),
-	    isActive = true;
-
-	var vis = new Vis(store);
+	    isActive = true,
+	    vis = new Vis(store),
+	    search = new Search(store, vis);
 
 	store.subscribe(function () {
 		var state = store.getState().storyfinder;
@@ -1076,6 +1077,11 @@ module.exports = function (store) {
 		}
 
 		switch (event.data.action) {
+			case 'open':
+				vis.showDetailsForId(event.data.data, function (el, data) {
+					showSources();
+				});
+				break;
 			case 'create':
 				store.dispatch(actions.createNode(event.data.data));
 				break;
@@ -1103,7 +1109,7 @@ module.exports = function (store) {
 	//store.dispatch(actions.initializeGlobal());
 };
 
-},{"./actions/StoryfinderActions.js":1,"./templates/graph/title.hbs":112,"./templates/nodes/create.hbs":113,"./templates/relations/relation.hbs":114,"./templates/relations/relations.hbs":115,"./templates/sites/sites.hbs":116,"./vis.js":117,"async":9,"base-64":11,"d3":17,"dom-delegate":21,"form-serialize":35,"lodash":75,"socket.io-client":89}],3:[function(require,module,exports){
+},{"./actions/StoryfinderActions.js":1,"./search.js":111,"./templates/graph/title.hbs":113,"./templates/nodes/create.hbs":114,"./templates/relations/relation.hbs":115,"./templates/relations/relations.hbs":116,"./templates/sites/sites.hbs":118,"./vis.js":119,"async":9,"base-64":11,"d3":17,"dom-delegate":21,"form-serialize":35,"lodash":75,"socket.io-client":89}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1515,7 +1521,11 @@ module.exports = function (store) {
 	this.expand = expand;
 
 	function show(nodeId, isTemporarily) {
-		nodes[indexMap[nodeId]][isTemporarily ? 'showTemporarily' : 'show'] = true;
+		if (!_.isUndefined(indexMap[nodeId]) && !_.isUndefined(nodes[indexMap[nodeId]])) {
+			nodes[indexMap[nodeId]][isTemporarily ? 'showTemporarily' : 'show'] = true;
+		} else {
+			console.log(indexMap);
+		}
 	}
 
 	this.show = show;
@@ -1988,7 +1998,7 @@ var store = (0, _configureStore2.default)();
 
 var app = new App(store);
 
-},{"./app.js":2,"./store/configureStore":111}],6:[function(require,module,exports){
+},{"./app.js":2,"./store/configureStore":112}],6:[function(require,module,exports){
 'use strict';
 
 var d3 = require('d3');
@@ -8580,7 +8590,7 @@ module.exports = function(arraybuffer, start, end) {
 }());
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":124}],10:[function(require,module,exports){
+},{"_process":126}],10:[function(require,module,exports){
 
 /**
  * Expose `Backoff`.
@@ -18939,7 +18949,7 @@ function localstorage(){
 }
 
 }).call(this,require('_process'))
-},{"./debug":19,"_process":124}],19:[function(require,module,exports){
+},{"./debug":19,"_process":126}],19:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -21766,7 +21776,7 @@ WS.prototype.check = function () {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../transport":25,"component-inherit":16,"debug":18,"engine.io-parser":32,"parseqs":79,"ws":123,"yeast":107}],31:[function(require,module,exports){
+},{"../transport":25,"component-inherit":16,"debug":18,"engine.io-parser":32,"parseqs":79,"ws":125,"yeast":107}],31:[function(require,module,exports){
 (function (global){
 // browser shim for xmlhttprequest module
 
@@ -23598,7 +23608,7 @@ return Promise;
 })));
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":124}],35:[function(require,module,exports){
+},{"_process":126}],35:[function(require,module,exports){
 // get successful control from form and assemble into object
 // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.2
 
@@ -49197,7 +49207,7 @@ function combineReducers(reducers) {
   };
 }
 }).call(this,require('_process'))
-},{"./createStore":86,"./utils/warning":88,"_process":124,"lodash/isPlainObject":74}],85:[function(require,module,exports){
+},{"./createStore":86,"./utils/warning":88,"_process":126,"lodash/isPlainObject":74}],85:[function(require,module,exports){
 "use strict";
 
 exports.__esModule = true;
@@ -49547,7 +49557,7 @@ exports.bindActionCreators = _bindActionCreators2['default'];
 exports.applyMiddleware = _applyMiddleware2['default'];
 exports.compose = _compose2['default'];
 }).call(this,require('_process'))
-},{"./applyMiddleware":82,"./bindActionCreators":83,"./combineReducers":84,"./compose":85,"./createStore":86,"./utils/warning":88,"_process":124}],88:[function(require,module,exports){
+},{"./applyMiddleware":82,"./bindActionCreators":83,"./combineReducers":84,"./compose":85,"./createStore":86,"./utils/warning":88,"_process":126}],88:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -53172,6 +53182,168 @@ function layerlist() {
 },{"../constants/ActionTypes":3,"immutable":60}],111:[function(require,module,exports){
 'use strict';
 
+var _ = require('lodash'),
+    async = require('async'),
+    Delegate = require('dom-delegate'),
+    tplResults = require('./templates/search/results.hbs'),
+    actions = require('./actions/StoryfinderActions.js');
+
+module.exports = function (store, vis) {
+	var inputDelegate = null,
+	    searchDelegate = null,
+	    searchQ = async.queue(search, 1),
+	    elResults = document.getElementById('search-results');
+
+	function initialize() {
+		inputDelegate = new Delegate(document.body.querySelector('#graph-title'));
+
+		inputDelegate.on('keyup', '.btn-search > input', function (event) {
+			var value = event.target.value;
+
+			if (value.replace(/\s+/g, '').length == 0) {
+				event.target.classList.remove('active');
+				event.target.parentNode.classList.remove('active');
+				elResults.classList.remove('active');
+			} else {
+				elResults.classList.add('active');
+				event.target.classList.add('active');
+				event.target.parentNode.classList.add('active');
+				searchQ.push(value);
+			}
+		});
+
+		inputDelegate.on('click', '.btn-search .icon-close', function (event) {
+			clear();
+			return false;
+		});
+
+		searchDelegate = new Delegate(elResults);
+
+		searchDelegate.on('click', '.site .show-graph', function (event) {
+			clear();
+			store.dispatch(actions.toLocalgraph(event.target.getAttribute('data-id')));
+			return false;
+		});
+
+		searchDelegate.on('click', '.entity', function (event) {
+			clear();
+			vis.highlight(parseInt(event.target.getAttribute('data-id')));
+			return false;
+		});
+	}
+
+	function clear() {
+		var input = document.body.querySelector('#graph-title .btn-search > input');
+		input.value = '';
+		input.blur();
+		input.classList.remove('active');
+		input.parentNode.classList.remove('active');
+		elResults.classList.remove('active');
+	}
+
+	function search(searchValue, callback) {
+		if (searchQ.length() > 0) return setTimeout(callback, 0); //Process only the latest query
+
+		fetch('/Entities/search?q=' + encodeURIComponent(searchValue), {
+			credentials: 'same-origin'
+		}).then(function (response) {
+			return response.json();
+		}).then(function (json) {
+			showResults(json);
+			setTimeout(callback, 0);
+		}).catch(function (err) {
+			console.log(err);
+			setTimeout(callback, 0);
+		});
+	}
+
+	function showResults(results) {
+		results.Sites.forEach(function (site) {
+			if (_.isUndefined(site.Article.Sentences)) site.Article.Sentences = [];
+
+			site.Article.Sentences = _.map(site.Article.Sentences, function (sentence) {
+				return sentence.text.split(results.search).join('<strong>' + results.search + '</strong>');
+			});
+
+			site.sentencesMore = site.Article.Sentences.length > 3 ? site.Article.Sentences.length - 3 : false;
+		});
+
+		elResults.innerHTML = tplResults(results);
+
+		//Scale elements equaly
+		var prevY = null,
+		    sitesByY = {};
+
+		function rescale(y) {
+			var row = sitesByY[y];
+
+			var max = 0;
+			row.forEach(function (c) {
+				if (c.height > max) max = c.height;
+			});
+
+			row.forEach(function (c) {
+				var s = c.el.querySelector('.sentences');
+				if (s == null) return;
+				var h = s.getBoundingClientRect().height;
+				s.style.maxHeight = h + (max - c.height) + 'px';
+				s.style.minHeight = h + (max - c.height) + 'px';
+			});
+		}
+
+		var sites = document.body.querySelectorAll('.site');
+
+		var _iteratorNormalCompletion = true;
+		var _didIteratorError = false;
+		var _iteratorError = undefined;
+
+		try {
+			for (var _iterator = sites[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+				var site = _step.value;
+
+				var rect = site.getBoundingClientRect();
+				var y = rect.top;
+
+				if (prevY != y && prevY != null) {
+					rescale(prevY);
+
+					rect = site.getBoundingClientRect();
+					y = rect.top;
+				}
+
+				if (_.isUndefined(sitesByY[y])) sitesByY[y] = [];
+
+				sitesByY[y].push({
+					el: site,
+					height: rect.height
+				});
+
+				prevY = y;
+			}
+		} catch (err) {
+			_didIteratorError = true;
+			_iteratorError = err;
+		} finally {
+			try {
+				if (!_iteratorNormalCompletion && _iterator.return) {
+					_iterator.return();
+				}
+			} finally {
+				if (_didIteratorError) {
+					throw _iteratorError;
+				}
+			}
+		}
+
+		if (!_.isNull(prevY)) rescale(prevY);
+	}
+
+	initialize();
+};
+
+},{"./actions/StoryfinderActions.js":1,"./templates/search/results.hbs":117,"async":9,"dom-delegate":21,"lodash":75}],112:[function(require,module,exports){
+'use strict';
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -53206,7 +53378,7 @@ function configureStore(initialState) {
   return store;
 }
 
-},{"../reducers":109,"redux":87,"redux-thunk":81}],112:[function(require,module,exports){
+},{"../reducers":109,"redux":87,"redux-thunk":81}],113:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
@@ -53215,7 +53387,7 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     var stack1;
 
   return ((stack1 = helpers["if"].call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.site_ids : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0),"inverse":container.program(15, data, 0),"data":data})) != null ? stack1 : "")
-    + "	\n		<!--<a class=\"btn-search\"><input /><i class=\"material-icons\">search</i></a>-->\n";
+    + "	\n		<a class=\"btn-search\"><input /><i class=\"icon-search material-icons\">search</i><i class=\"icon-close material-icons\">close</i></a>\n";
 },"4":function(container,depth0,helpers,partials,data) {
     var stack1;
 
@@ -53286,14 +53458,14 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
 },"22":function(container,depth0,helpers,partials,data) {
     return "				<div class=\"caption\"><i class=\"fa fa-spinner fa-spin\"></i></div>\n";
 },"24":function(container,depth0,helpers,partials,data) {
-    return "				<a class=\"btn-menu\"><i class=\"material-icons\">menu</i></a>\n				<div class=\"caption\">Global graph</div>\n";
+    return "				<a class=\"btn-menu\"><i class=\"material-icons\">menu</i></a>\n				<div class=\"caption\">Global network</div>\n";
 },"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
     var stack1;
 
   return ((stack1 = helpers["if"].call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.loading : depth0),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.program(3, data, 0),"data":data})) != null ? stack1 : "");
 },"useData":true});
 
-},{"hbsfy/runtime":57}],113:[function(require,module,exports){
+},{"hbsfy/runtime":57}],114:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
@@ -53308,7 +53480,7 @@ module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":f
     + "\" />\n	</div>-->\n	<div class=\"checkbox\">\n		<label>\n			<input type=\"checkbox\" name=\"data[entity][show_always]\" value=\"1\" checked />\n			Element is always visible\n		</label>\n	</div>\n	<div class=\"checkbox\">\n		<label>\n			<input type=\"checkbox\" name=\"data[options][find_relations]\" value=\"1\" checked />\n			Autodetect relations\n		</label>\n	</div>\n	</form>\n</div>";
 },"useData":true});
 
-},{"hbsfy/runtime":57}],114:[function(require,module,exports){
+},{"hbsfy/runtime":57}],115:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
@@ -53377,7 +53549,7 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + "</div>\n</div>";
 },"useData":true,"useDepths":true});
 
-},{"hbsfy/runtime":57}],115:[function(require,module,exports){
+},{"hbsfy/runtime":57}],116:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
@@ -53426,7 +53598,114 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + "	</tbody>\n</table>\n\n";
 },"useData":true,"useDepths":true});
 
-},{"hbsfy/runtime":57}],116:[function(require,module,exports){
+},{"hbsfy/runtime":57}],117:[function(require,module,exports){
+// hbsfy compiled Handlebars template
+var HandlebarsCompiler = require('hbsfy/runtime');
+module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "<h3>Entities</h3>\n	<div class=\"row\">\n"
+    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.Entities : depth0),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "	</div>\n	<div class=\"clearfix\"></div>\n";
+},"2":function(container,depth0,helpers,partials,data) {
+    var helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "		<div class=\"entity type-"
+    + alias4(((helper = (helper = helpers.type || (depth0 != null ? depth0.type : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"type","hash":{},"data":data}) : helper)))
+    + "\" data-id=\""
+    + alias4(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"id","hash":{},"data":data}) : helper)))
+    + "\">"
+    + alias4(((helper = (helper = helpers.caption || (depth0 != null ? depth0.caption : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"caption","hash":{},"data":data}) : helper)))
+    + "</div>\n";
+},"4":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "<h3>Sites</h3>\n	<div class=\"row\">\n"
+    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.Sites : depth0),{"name":"each","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "	</div>\n</div>\n";
+},"5":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "		<div class=\"col-md-4\">\n			<div class=\"site"
+    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"unless","hash":{},"fn":container.program(6, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.isLight : depth0),{"name":"if","hash":{},"fn":container.program(6, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\" style=\""
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"if","hash":{},"fn":container.program(8, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\">\n				<div class=\"thumbnail\" style=\"background-image: url('/images/1/sites/"
+    + alias4(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"id","hash":{},"data":data}) : helper)))
+    + ".png');\"></div>\n				<div class=\"last-visited\">"
+    + alias4(((helper = (helper = helpers.last_visited || (depth0 != null ? depth0.last_visited : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"last_visited","hash":{},"data":data}) : helper)))
+    + "</div>\n				<h4>"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.title : depth0),{"name":"if","hash":{},"fn":container.program(10, data, 0),"inverse":container.program(12, data, 0),"data":data})) != null ? stack1 : "")
+    + "				</h4>\n				<div class=\"sentences\">\n"
+    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.Sentences : stack1),{"name":"each","hash":{},"fn":container.program(14, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.sentencesMore : depth0),{"name":"if","hash":{},"fn":container.program(16, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "				</div>\n				<ul>\n					<li><a class=\"show-graph\" href=\"#\" data-id=\""
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.master_id : depth0),{"name":"if","hash":{},"fn":container.program(18, data, 0),"inverse":container.program(20, data, 0),"data":data})) != null ? stack1 : "")
+    + "\">Open network</a></li>\n					<li><a href=\""
+    + alias4(((helper = (helper = helpers.url || (depth0 != null ? depth0.url : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"url","hash":{},"data":data}) : helper)))
+    + "\" target=\"_blank\">Open site</a></li>\n					<li><a href=\"/Articles/"
+    + alias4(container.lambda(((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.id : stack1), depth0))
+    + "\" target=\"_blank\">Open archived article</a></li>\n				</ul>\n			</div>\n		</div>\n";
+},"6":function(container,depth0,helpers,partials,data) {
+    return " is-light";
+},"8":function(container,depth0,helpers,partials,data) {
+    var helper;
+
+  return "background-color: #"
+    + container.escapeExpression(((helper = (helper = helpers.primary_color || (depth0 != null ? depth0.primary_color : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"primary_color","hash":{},"data":data}) : helper)));
+},"10":function(container,depth0,helpers,partials,data) {
+    var helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "\n						"
+    + alias4(((helper = (helper = helpers.title || (depth0 != null ? depth0.title : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"title","hash":{},"data":data}) : helper)))
+    + "\n						<small>"
+    + alias4(((helper = (helper = helpers.url || (depth0 != null ? depth0.url : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"url","hash":{},"data":data}) : helper)))
+    + "</small>\n";
+},"12":function(container,depth0,helpers,partials,data) {
+    var helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+
+  return "						"
+    + alias4(((helper = (helper = helpers.shortHost || (depth0 != null ? depth0.shortHost : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"shortHost","hash":{},"data":data}) : helper)))
+    + "\n						<small>"
+    + alias4(((helper = (helper = helpers.shortUrl || (depth0 != null ? depth0.shortUrl : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"shortUrl","hash":{},"data":data}) : helper)))
+    + "</small>\n";
+},"14":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "					<div class=\"sentence\">»"
+    + ((stack1 = container.lambda(depth0, depth0)) != null ? stack1 : "")
+    + "</div>\n";
+},"16":function(container,depth0,helpers,partials,data) {
+    var helper;
+
+  return "					<div class=\"sentences-more\">\n						<div class=\"action-show\">+ "
+    + container.escapeExpression(((helper = (helper = helpers.sentencesMore || (depth0 != null ? depth0.sentencesMore : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"sentencesMore","hash":{},"data":data}) : helper)))
+    + " more sentences</div>\n					</div>\n";
+},"18":function(container,depth0,helpers,partials,data) {
+    var helper;
+
+  return container.escapeExpression(((helper = (helper = helpers.master_id || (depth0 != null ? depth0.master_id : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"master_id","hash":{},"data":data}) : helper)));
+},"20":function(container,depth0,helpers,partials,data) {
+    var helper;
+
+  return container.escapeExpression(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"id","hash":{},"data":data}) : helper)));
+},"22":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return ((stack1 = helpers.unless.call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.Sites : depth0),{"name":"unless","hash":{},"fn":container.program(23, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "");
+},"23":function(container,depth0,helpers,partials,data) {
+    return "		No results found!\n";
+},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+    var stack1, alias1=depth0 != null ? depth0 : {};
+
+  return "<div class=\"container-fluid\">\n"
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.Entities : depth0),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.Sites : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.Entities : depth0),{"name":"unless","hash":{},"fn":container.program(22, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "");
+},"useData":true});
+
+},{"hbsfy/runtime":57}],118:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
@@ -53496,7 +53775,7 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + "</div>";
 },"useData":true});
 
-},{"hbsfy/runtime":57}],117:[function(require,module,exports){
+},{"hbsfy/runtime":57}],119:[function(require,module,exports){
 'use strict';
 
 var d3 = require('d3'),
@@ -54462,7 +54741,7 @@ module.exports = function Vis(store) {
 
 	this.closeNode = closeNode;
 
-	function selectNode(el) {
+	function selectNode(el, transitionTime) {
 		var node = d3.select(el),
 		    nodeData = node.datum();
 
@@ -54475,7 +54754,7 @@ module.exports = function Vis(store) {
 			return false;
 		}
 
-		openNode(el, node, nodeData);
+		openNode(el, node, nodeData, transitionTime);
 	}
 
 	this.selectNode = selectNode;
@@ -54483,7 +54762,7 @@ module.exports = function Vis(store) {
 	/*
  Open a node in the sidebar	
  */
-	function openNode(el, node, nodeData) {
+	function openNode(el, node, nodeData, transitionTime) {
 		if (!_.isNull(d3cola)) d3cola.stop();
 
 		var idx = 0,
@@ -54576,7 +54855,7 @@ module.exports = function Vis(store) {
 		/*
   Knoten verschieben, die sich um dieses Element befinden
   */
-		label.transition().ease('elastic').duration(transitionCard).attrTween('transform', function (d, i, a) {
+		label.transition().ease('elastic').duration(_.isUndefined(transitionTime) ? transitionCard : transitionTime).attrTween('transform', function (d, i, a) {
 			var x = [d.x, d.x],
 			    y = [d.y, d.y],
 			    p = [d.pageRank, d.pageRank];
@@ -54626,7 +54905,7 @@ module.exports = function Vis(store) {
 			};
 		});
 
-		link.selectAll('path').transition().duration(transitionCard).ease('elastic').attrTween('d', function (d) {
+		link.selectAll('path').transition().duration(_.isUndefined(transitionTime) ? transitionCard : transitionTime).ease('elastic').attrTween('d', function (d) {
 			var sx = [d.source.x, d.source.tx],
 			    sy = [d.source.y, d.source.ty],
 			    tx = [d.target.x, d.target.tx],
@@ -54984,6 +55263,14 @@ module.exports = function Vis(store) {
 
 	this.hideNode = hideNode;
 
+	function showDetailsForId(nodeId, callback) {
+		//var el = svg.select('.label[data-id="' + nodeId + '"]');
+		selectNode('.label[data-id="' + nodeId + '"]');
+		showDetails('.label[data-id="' + nodeId + '"]', callback);
+	}
+
+	this.showDetailsForId = showDetailsForId;
+
 	function highlight(nodeId) {
 		var el = svg.select('.label[data-id="' + nodeId + '"] > circle');
 
@@ -55007,7 +55294,7 @@ module.exports = function Vis(store) {
 	this.unhighlight = unhighlight;
 };
 
-},{"./actions/StoryfinderActions.js":1,"./global_graph.js":4,"./libs/cola.js":6,"./vis/helpers/smoothLine.js":118,"./vis/transitions/applyNewData.js":119,"./vis/transitions/moveExisting.js":120,"./vis/transitions/removeDeleted.js":121,"./vis/transitions/showNew.js":122,"async":9,"d3":17,"dom-delegate":21,"es6-promise":34,"isomorphic-fetch":63,"lodash":75}],118:[function(require,module,exports){
+},{"./actions/StoryfinderActions.js":1,"./global_graph.js":4,"./libs/cola.js":6,"./vis/helpers/smoothLine.js":120,"./vis/transitions/applyNewData.js":121,"./vis/transitions/moveExisting.js":122,"./vis/transitions/removeDeleted.js":123,"./vis/transitions/showNew.js":124,"async":9,"d3":17,"dom-delegate":21,"es6-promise":34,"isomorphic-fetch":63,"lodash":75}],120:[function(require,module,exports){
 'use strict';
 
 var d3 = require('d3'),
@@ -55051,7 +55338,7 @@ module.exports = function (l, r) {
 	return lineFunction(lineData);
 };
 
-},{"d3":17,"lodash":75}],119:[function(require,module,exports){
+},{"d3":17,"lodash":75}],121:[function(require,module,exports){
 'use strict';
 
 var _ = require('lodash'),
@@ -55488,7 +55775,7 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 	this.applyNewData = applyNewData;
 };
 
-},{"../helpers/smoothLine.js":118,"async":9,"d3":17,"hyphenation.de":58,"hypher":59,"lodash":75}],120:[function(require,module,exports){
+},{"../helpers/smoothLine.js":120,"async":9,"d3":17,"hyphenation.de":58,"hypher":59,"lodash":75}],122:[function(require,module,exports){
 'use strict';
 
 var _ = require('lodash'),
@@ -55594,7 +55881,7 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 	this.moveExisting = moveExisting;
 };
 
-},{"../helpers/smoothLine.js":118,"async":9,"d3":17,"lodash":75}],121:[function(require,module,exports){
+},{"../helpers/smoothLine.js":120,"async":9,"d3":17,"lodash":75}],123:[function(require,module,exports){
 'use strict';
 
 var _ = require('lodash'),
@@ -55678,7 +55965,7 @@ module.exports = function (options, renderGraph, node, label, link) {
 	this.removeDeleted = removeDeleted;
 };
 
-},{"async":9,"lodash":75}],122:[function(require,module,exports){
+},{"async":9,"lodash":75}],124:[function(require,module,exports){
 'use strict';
 
 var _ = require('lodash'),
@@ -55767,9 +56054,9 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 	this.showNew = showNew;
 };
 
-},{"../helpers/smoothLine.js":118,"async":9,"d3":17,"lodash":75}],123:[function(require,module,exports){
+},{"../helpers/smoothLine.js":120,"async":9,"d3":17,"lodash":75}],125:[function(require,module,exports){
 
-},{}],124:[function(require,module,exports){
+},{}],126:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};

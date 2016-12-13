@@ -11,6 +11,7 @@ var d3 = require('d3')
 	, tplNodeCreate = require('./templates/nodes/create.hbs')
 	, actions = require('./actions/StoryfinderActions.js')
 	, serialize = require('form-serialize')
+	, Search = require('./search.js')
 	, _ = require('lodash')
 	;
 
@@ -25,9 +26,9 @@ module.exports = function(store){
 		, io = require('socket.io-client')()
 		, userId = store.getState().config.get('user-id')
 		, isActive = true
+		, vis = new Vis(store)
+		, search = new Search(store, vis)
 		;
-	
-	var vis = new Vis(store);
 	
 	store.subscribe(() => {
 		var state = store.getState().storyfinder;
@@ -511,7 +512,7 @@ module.exports = function(store){
 			
 		return false;
 	});
-	
+		
 	var createNodeDelegate = new Delegate(nodeCreate);
 	createNodeDelegate.on('click', '.btn-back', function(event){
 		store.dispatch(actions.toGraph());
@@ -751,6 +752,11 @@ module.exports = function(store){
 		}
 						
 		switch(event.data.action){
+			case 'open':
+				vis.showDetailsForId(event.data.data, function(el, data){		
+					showSources();
+				});
+			break;
 			case 'create':
 				store.dispatch(actions.createNode(event.data.data));
 			break;

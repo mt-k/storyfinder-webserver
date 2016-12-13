@@ -10365,6 +10365,180 @@ svg.node-selected .link:not(.selection-neighbour) {
 .node-details .relations .relation.type-KEY .neighbour {
   color: #FF5722;
 }
+.search-results {
+  display: none;
+  position: absolute;
+  background-color: #efefef;
+  overflow: auto;
+  z-index: 3;
+  left: 0;
+  top: 70px;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  display: block;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.search-results.active {
+  pointer-events: all;
+  opacity: 1;
+}
+.search-results .entity {
+  color: #FFFFFF;
+  box-shadow: 0px 4px 7px #666666;
+  padding: 0px 15px;
+  margin: 15px;
+  height: 120px;
+  width: 120px;
+  border-radius: 60px;
+  text-align: center;
+  line-height: 120px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  float: left;
+  cursor: pointer;
+}
+.search-results .entity:hover {
+  box-shadow: 0px 4px 10px #444444;
+}
+.search-results .entity.type-ORG {
+  background-color: #E91E63;
+}
+.search-results .entity.type-PER {
+  background-color: #03A9F4;
+}
+.search-results .entity.type-LOC {
+  background-color: #4CAF50;
+}
+.search-results .entity.type-OTH {
+  background-color: #673AB7;
+}
+.search-results .entity.type-KEY {
+  background-color: #FF5722;
+}
+.search-results .site {
+  box-shadow: 0px 4px 7px #666666;
+  /*height: 300px;*/
+  margin-top: 15px;
+  margin-bottom: 15px;
+  margin-left: -5px;
+  margin-right: -5px;
+  border-radius: 3px;
+  color: #FFFFFF;
+}
+.search-results .site > .thumbnail {
+  width: 100%;
+  height: 150px;
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  margin: 0px;
+  padding: 0px;
+  border-radius: 0;
+  border: none;
+}
+@media (max-width: 767px) {
+  .search-results .site {
+    margin-left: -15px;
+    margin-right: -15px;
+  }
+}
+.search-results .site.is-light {
+  color: #2b2b2b;
+}
+.search-results .site h4 {
+  margin: 0px;
+  padding: 5px 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Roboto Condensed';
+  font-weight: 300;
+}
+.search-results .site h4 > small {
+  display: block;
+  clear: both;
+  padding-bottom: 20px;
+  font-weight: 100;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-results .site .last-visited {
+  padding: 5px 20px;
+  font-size: 70%;
+  text-align: right;
+  padding-bottom: 5px;
+}
+.search-results .site .sentences {
+  overflow: hidden;
+  transition: max-height 1s ease;
+}
+.search-results .site .sentences.showOverflow {
+  z-index: 5;
+  max-height: 5000px !important;
+}
+.search-results .site .sentences.showOverflow .sentence {
+  display: block;
+}
+.search-results .site .sentences.showOverflow .sentences-more .action-show {
+  display: none;
+}
+.search-results .site .sentences.showOverflow .sentences-more .action-hide {
+  display: block;
+}
+.search-results .site .sentences .sentence {
+  padding: 5px 20px;
+  font-size: 80%;
+  font-family: 'Roboto Condensed';
+  border-bottom: 1px solid #B6B6B6;
+  color: #727272;
+  background-color: #FFFFFF;
+  display: none;
+}
+.search-results .site .sentences .sentence strong {
+  color: #2b2b2b;
+}
+.search-results .site .sentences .sentence:last-child {
+  border-bottom: none;
+}
+.search-results .site .sentences .sentence:nth-child(1),
+.search-results .site .sentences .sentence:nth-child(2),
+.search-results .site .sentences .sentence:nth-child(3) {
+  display: block;
+}
+.search-results .site .sentences .sentences-more {
+  text-align: left;
+  padding: 10px 20px;
+  background-color: #FFFFFF;
+  color: #727272;
+  font-family: 'Roboto Condensed';
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.search-results .site .sentences .sentences-more .action-show {
+  display: block;
+}
+.search-results .site .sentences .sentences-more .action-hide {
+  display: none;
+}
+.search-results .site > ul {
+  bottom: 0px;
+  margin: 0px;
+  list-style-type: none;
+  padding: 0px;
+  padding-bottom: 10px;
+}
+.search-results .site > ul > li {
+  padding: 10px 20px;
+}
+.search-results .site > ul > li a {
+  color: inherit;
+}
 .node-create {
   display: none;
   position: absolute;
@@ -10553,32 +10727,36 @@ svg.node-selected .link:not(.selection-neighbour) {
   color: #FFFFFF;
   text-decoration: none;
   width: 30px;
-  margin-right: 60px;
+  margin-right: 20px;
   cursor: pointer;
 }
 .graph-title .btn-search {
   vertical-align: bottom;
   white-space: nowrap;
-  flex: 0 0 130px;
+  flex: 0 0 30px;
   margin-top: 1rem;
   display: inline-block;
   color: #FFFFFF;
   text-decoration: none;
-  margin-left: 60px;
+  margin-left: 20px;
   cursor: pointer;
   margin-bottom: 15px;
   position: relative;
 }
-.graph-title .btn-search i {
+.graph-title .btn-search i.icon-search {
   position: absolute;
-  right: 30px;
+  right: 0px;
+  pointer-events: none;
+}
+.graph-title .btn-search i.icon-close {
+  display: none;
 }
 .graph-title .btn-search:focus i {
   background-color: #FFFFFF;
 }
 .graph-title .btn-search input {
-  margin-right: 30px;
-  width: 100px;
+  margin-right: 0px;
+  width: 160px;
   border: none;
   background-color: transparent;
   border-bottom: 3px solid #FFFFFF;
@@ -10586,11 +10764,40 @@ svg.node-selected .link:not(.selection-neighbour) {
   transition-duration: 0.3s;
   transition-timing-function: ease;
 }
-.graph-title .btn-search input:focus {
+.graph-title .btn-search input:focus,
+.graph-title .btn-search input.active {
   padding-left: 10px;
   background-color: #FFFFFF;
   color: #555555;
-  width: 300px;
+  width: 250px;
+  padding-right: 30px;
+}
+.graph-title .btn-search.active i.icon-close {
+  position: absolute;
+  right: 2px;
+  display: block;
+  top: 5px;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  border-radius: 13px;
+  font-size: 80%;
+  line-height: 25px;
+  vertical-align: middle;
+  text-align: center;
+  background-color: #999999;
+}
+@media (max-width: 767px) {
+  .graph-title .btn-search input {
+    width: 30px;
+    border-bottom: none;
+    cursor: pointer;
+  }
+  .graph-title .btn-search input:focus,
+  .graph-title .btn-search input.active {
+    cursor: default;
+    width: 180px;
+  }
 }
 .graph-title .btn-menu {
   flex: 0 0 30px;
@@ -10600,7 +10807,7 @@ svg.node-selected .link:not(.selection-neighbour) {
   color: #FFFFFF;
   text-decoration: none;
   width: 30px;
-  margin-right: 60px;
+  margin-right: 20px;
   cursor: pointer;
 }
 @media (max-width: 767px) {
