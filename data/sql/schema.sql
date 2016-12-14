@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `log_entities` (
 
 CREATE TABLE IF NOT EXISTS `ngrams` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `value` varchar(64) CHARACTER SET utf8 COLLATE utf8_unicode_520_ci NOT NULL,
+  `value` varchar(64) CHARACTER SET utf8 NOT NULL,
   `collection_id` int(10) UNSIGNED NOT NULL,
   `docs` smallint(5) UNSIGNED NOT NULL,
   `created` datetime NOT NULL,
