@@ -5,6 +5,7 @@ var _ = require('lodash')
 	, path = require('path')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
 	, colorThief = new (require('color-thief'))()
+	, evallog = new (require('../libs/evallog.js'))()
 	;
 	
 module.exports = function(connection, app, passport, io){
@@ -27,6 +28,7 @@ module.exports = function(connection, app, passport, io){
 			})
 		, StopwordComponent = new (require('./components/StopwordComponent.js'))()
 		, KeywordComponent = new (require('./components/KeywordComponent.js'))(Ngram, Article)
+		, RandomforestComponent = new (require('./components/RandomforestComponent.js'))('./data/trees.txt')
 		;
 		
 	app.get('/Sites', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), function (req, res) {
@@ -52,7 +54,7 @@ module.exports = function(connection, app, passport, io){
 			/*
 			Get the sites in the collection	
 			*/
-			(memo, next) => {
+			(memo, next) => {				
 				Site.getAll(memo.Collection.id, page,
 					(err, sites) => {
 						if(err)return setImmediate(() => next(err));
@@ -98,6 +100,9 @@ module.exports = function(connection, app, passport, io){
 		var userId = req.user.id
 			;
 		
+		console.log('Open new site');
+		evallog.log('Open site ' + req.body.Site.url);
+				
 		io.emit('parsing_site', null);
 				
 		async.waterfall([
@@ -117,7 +122,7 @@ module.exports = function(connection, app, passport, io){
 						
 			delete result.data;
 			
-			console.log(result);
+			//console.log(result);
 			
 			if(_.isUndefined(result.is_parseable) || result.is_parseable)	
 				io.emit('new_site', result);
@@ -128,18 +133,20 @@ module.exports = function(connection, app, passport, io){
 		});
 	});
 	
-	app.put('/Sites/:siteId/image', passport.authenticate('basic', {session: false}), function(req, res){
+	app.put('/Sites/:siteId/image', passport.authenticate('basic', {session: false}), function(req, res){		
 		var userId = req.user.id
 			, siteId = req.params.siteId
 			, img = req.body.image.replace(/^data:image\/png;base64,/, "")
 			;
 		
+			
 		async.waterfall([
 			(next) => setImmediate(() => next(null, {
 				user_id: userId			
 			})),
 			_mGetCollection, //Get the id of user's default collection
 			(memo, next) => {
+				console.log('Save image in ' + ['..', 'public', 'images', '/' + memo.Collection.id, 'sites'].join('/'));
 				async.reduce(['..', 'public', 'images', '/' + memo.Collection.id, 'sites'], __dirname, (p, folder, nextFolder) => {
 					p = path.join(p, folder);
 
@@ -157,6 +164,7 @@ module.exports = function(connection, app, passport, io){
 						}
 					});
 				}, (err, p) => {
+					if(err)console.log(err);
 					if(err)return setImmediate(() => next(err));
 					
 					memo.path = p;
@@ -165,6 +173,7 @@ module.exports = function(connection, app, passport, io){
 			},
 			(memo, next) => {
 				var p = path.join(memo.path, siteId + '.png');
+								
 				fs.writeFile(p, img, 'base64', function(err){
 					if(err)return setImmediate(() => next(err));
 					
@@ -212,10 +221,41 @@ module.exports = function(connection, app, passport, io){
 		
 		    return hex;
 		}
+		
+		function _rowIsRelevant(row){
+			row = row.replace(/^\s+/g,'').replace(/\s+$/g,'');
+			if(row.length == 0)return false;
+			var cntAlphanumeric = row.length - row.replace(/[A-Za-z\-\,\.\?\s]/g,'').length;
+			var ratioAlphanumeric = 1 / row.length * cntAlphanumeric;
+			var tokens = row.split(/\s+/);
+			
+			return ratioAlphanumeric >= 0.90 && tokens.length >= 6 && tokens.length < 25;
+		}
 	
 		function _isSiteRelevant(data, callback){			
 			//if the field data.Site.isRelevant is set to true than the site is marked as relevant by the user
 			if(data.Article.isRelevant)return setImmediate(() => callback(null, true));
+
+			var html = data.Article.content;
+			var rows = data.Article.plain.split(/[\.\?\!\n]/g);
+			var rowsRelevant = [];
+			for(var row of rows)
+				if(_rowIsRelevant(row))
+					rowsRelevant.push(row);
+			var total = data.Article.plain.replace(/\s/g).length;
+			
+			var d = {
+				form: (html.match(/\<form/g) != null)?html.match(/\<form/g).length:0, //Form Elemente
+				input: (html.match(/\<input/g) != null)?html.match(/\<input/g).length:0, //Input Elemente
+				headlines: (html.match(/\<h\d/g) != null)?html.match(/\<h\d/g).length:0 ,//Ueberschriften
+				paragraphs: (html.match(/\<p/g) != null)?html.match(/\<p/g).length:0, //Paragraphs
+				breaks: (html.match(/\<br/g) != null)?html.match(/\<br/g).length:0, //Breaks
+				images: (html.match(/\<img/g) != null)?html.match(/\<img/g).length:0, //Image
+				tr: (html.match(/\<tr/g) != null)?html.match(/\<tr/g).length:0, //Tr
+				textratio: (total == 0)?0:((1 / total) * rowsRelevant.join('').replace(/\s/g).length)
+			};
+						
+			/*
 			
 			var rows = _.filter(data.Article.plain.split('\n'), (row) => {
 				row = row.replace(/^\s+/g,'').replace(/\s+$/g,'');
@@ -233,9 +273,9 @@ module.exports = function(connection, app, passport, io){
 				return true;
 			});
 			
-			var score = 1 / data.Article.plain.replace(/\s/g).length * rows.join('').replace(/\s/g).length;
+			var score = 1 / data.Article.plain.replace(/\s/g).length * rows.join('').replace(/\s/g).length;*/
 			
-			if(score > 0.3)
+			if(RandomforestComponent.classify(d) == 1)
 				setImmediate(() => callback(null, true));
 			else
 				setImmediate(() => callback(null, false));
@@ -330,7 +370,7 @@ module.exports = function(connection, app, passport, io){
 				if(err)return setImmediate(() => next(err));
 				
 				if(!_.isEmpty(site)){
-					console.log('Found site ' + memo.data.Site.url)
+					//console.log('Found site ' + memo.data.Site.url)
 					site.is_relevant = true;
 					memo.Site = site;
 					memo.is_new = memo.is_new || false;
@@ -340,10 +380,11 @@ module.exports = function(connection, app, passport, io){
 				//Site doesn't exist => check if the site is relevant
 				_isSiteRelevant(memo.data, (err, bIsRelevant) => {
 					if(err)return setImmediate(() => next(err));
-										
+							
 					if(!bIsRelevant){
 						console.log('Site is not relevant');
 						//Site is not relevant => stop here
+						//memo.is_parsable = false;
 						memo.is_relevant = false;
 						memo.is_new = true;
 						return setImmediate(() => next(null, memo))
@@ -357,7 +398,30 @@ module.exports = function(connection, app, passport, io){
 					//Site is relevant => add to database
 					async.waterfall([
 						(nextParse) => setImmediate(() => nextParse(null, memo)),
-						_mParseOpenNLP,
+						function(memo, next){
+							var retries = 1;
+							async.doWhilst((nextWhile) => {
+								_mParseOpenNLP(memo, function(err, nextMemo){
+									if(err){
+										retries--;
+										console.log(err);
+										console.log('Retry parsing article using corenlp');
+										setImmediate(nextWhile);
+										return;
+									}
+									
+									retries = -1;
+									memo = nextMemo;
+									setImmediate(nextWhile);
+								});
+							}, () => {
+								return retries > 0;
+							}, function(err){
+								if(retries != -1)
+									return setImmediate(() => next(new Error('Error parsing article')));
+								setImmediate(() => next(null, memo));
+							});
+						},
 						_mFindEntities,
 						_mExtractNamedEntities,
 						_mFilterStopwords,
@@ -380,8 +444,6 @@ module.exports = function(connection, app, passport, io){
 		*/
 		function _mParseOpenNLP(memo, next){
 			tokens = [];
-		
-			//console.log(memo.data.Article.plain);
 		
 			CorenlpComponent.parse(memo.data.Article.plain, {annotators: 'tokenize,ssplit,pos,lemma'}, (err, results) => {	
 				if(err)return setImmediate(() => next(err));

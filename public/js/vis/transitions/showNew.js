@@ -5,6 +5,12 @@ var _ = require('lodash')
 	;
 
 module.exports = function(options, elNew, elExisting, renderGraph, node, label, link){
+	function getScalingFactor(d){
+		if(!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf))
+			return d.tfidf;
+		return d.pageRank;
+	}
+	
 	/*
 		Neue Knoten und links einblenden
 	*/
@@ -31,7 +37,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 				var transition = elNew.labels
 					.attr('transform', function(d){
 						if(_.isNull(srcData))
-							return 'translate(' + (options.width + d.width) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+							return 'translate(' + (options.width + d.width) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 						else
 							return 'translate(' + srcData.x + ',' + srcData.y + ') scale(' + 0 + ')';
 					})
@@ -45,7 +51,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 					.attrTween('transform', function(d, i, a){
 						var x = [options.width + d.width, d.x]
 							, y = [d.y, d.y]
-							, p = [(d.pageRank / 2 + 0.75), (d.pageRank / 2 + 0.75)]
+							, p = [(getScalingFactor(d) / 2 + 0.75), (getScalingFactor(d) / 2 + 0.75)]
 							;
 						
 						if(!_.isNull(srcData)){
@@ -72,7 +78,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 				var n = 0;
 				var transition = elNew.nodes
 					.attr('transform', function(d){
-						return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+						return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 					})
 					.transition()
 					.duration(options.transitionAdd)

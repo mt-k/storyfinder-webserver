@@ -32,6 +32,7 @@ module.exports = function(store){
 	
 	store.subscribe(() => {
 		var state = store.getState().storyfinder;
+		search.clear();
 		switch(state.get('state')){
 			case 'graph-to-relation':
 				vis.toRelation(state.get('entity1_id'), state.get('entity2_id'), () => {
@@ -554,7 +555,7 @@ module.exports = function(store){
 			focusSite(id);
 			return false;
 		}else{
-			menu.classList.remove('active');	
+			//menu.classList.remove('active');	
 			this.classList.add('focused');
 			
 			var ids = [];
@@ -694,12 +695,17 @@ module.exports = function(store){
 		isActive = false;
 	}
 	
+	var _handleResize = _.debounce(function(){
+		vis.handleResize();
+	}, 300);
+	
 	current();
 	loadSites();
 		
 	io.on('new_site', function(site){
 		if(!isActive)return false;
-		//alert('Received site');		
+		//alert('Received site');
+		search.clear();
 		if(site.is_relevant || !site.is_new){
 			hideSiteNotRelevant();
 			sites.push(site.Site);
@@ -713,6 +719,7 @@ module.exports = function(store){
 	
 	io.on('parsing_site', function(site){
 		if(!isActive)return false;
+		search.clear();
 		graphTitle.innerHTML = tplGraphtitle({loading: true});
 	});
 	
@@ -723,7 +730,8 @@ module.exports = function(store){
 	
 	io.on('new_entity', function(data){
 		if(!isActive)return false;
-				
+		search.clear();
+		
 		if(typeof parent != 'undefined' && parent != null){
 			parent.postMessage(["msg", {
 				action: 'newEntity',
@@ -741,6 +749,8 @@ module.exports = function(store){
 	});
 	
 	window.addEventListener("message", receiveMessage, false);
+
+	window.addEventListener("resize", _handleResize);
 
 	function receiveMessage(event)
 	{

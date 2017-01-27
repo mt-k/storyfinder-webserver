@@ -53,23 +53,44 @@ module.exports = function(db){
 		ArticleEntity.getInArticle(articleId, (err, entitiesInArticle) => {
 			if(_.isEmpty(entitiesInArticle))return setImmediate(() => callback(null, []));
 			
-			datasource.find('all', {
-				fields: ['id', 'caption', 'type', 'show_always'],
-				conditions: {
-					id: _.keys(entitiesInArticle),
-					master_id: null,
-					is_deleted: 0
-				}
-			}, (err, entities) => {
+			ArticleEntity.getDocumentfrequency(_.keys(entitiesInArticle), (err, df) => {	
 				if(err)return setImmediate(() => callback(err));
 				
-				if(entities.length == 0)
-					return setImmediate(() => callback(null, []));
-								
-				for(var entity of entities)
-					entity['count'] = entitiesInArticle[entity.id].total;
-
-				setImmediate(() => callback(null, entities));
+				console.log(df);
+				
+				datasource.find('all', {
+					fields: ['id', 'caption', 'type', 'show_always'],
+					conditions: {
+						id: _.keys(entitiesInArticle),
+						master_id: null,
+						is_deleted: 0
+					}
+				}, (err, entities) => {
+					if(err)return setImmediate(() => callback(err));
+					
+					if(entities.length == 0)
+						return setImmediate(() => callback(null, []));
+					
+					var maxTfidf = 0;
+						
+					for(var entity of entities){
+						entity['count'] = entitiesInArticle[entity.id].total;
+						if(_.isEmpty(df[entity.id]))
+							entity['tfidf'] = 0;
+						else
+							entity['tfidf'] = entity['count'] / df[entity.id].df;
+						
+						if(entity.tfidf > maxTfidf)
+							maxTfidf = entity.tfidf;
+					}
+					
+					//Normalize tfidf
+					if(maxTfidf > 0)
+						for(var entity of entities)
+							entity.tfidf = 1 / maxTfidf * entity.tfidf;
+	
+					setImmediate(() => callback(null, entities));
+				});
 			});
 		});
 	}

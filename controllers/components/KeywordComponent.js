@@ -7,8 +7,8 @@ var _ = require('lodash')
 module.exports = function(Ngram, Article){
 	var t = {
 		0: 3,
-		1: 3.8,
-		2: 3.8
+		1: 3,
+		2: 3
 	};
 
 	function getKeywords(candidates, nsize, collectionId, callback){

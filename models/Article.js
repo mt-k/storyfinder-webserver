@@ -240,6 +240,7 @@ module.exports = function(db){
 			fields: ['id', 'site_id', 'created'],
 			conditions: {
 				'text LIKE': '%' + value + '%',
+				collection_id: collectionId,
 				is_deleted: 0
 			},
 			order: 'created DESC',

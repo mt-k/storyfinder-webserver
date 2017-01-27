@@ -2,7 +2,7 @@
 {{#each Sites}}
 	<div class="col-md-4">
 		<div class="site{{#unless primary_color}} is-light{{/unless}}{{#if isLight}} is-light{{/if}}" style="{{#if primary_color}}background-color: #{{primary_color}}{{/if}}">
-			<div class="thumbnail" style="background-image: url('/images/1/sites/{{id}}.png');"></div>
+			<div class="thumbnail" style="background-image: url('/images/{{../Collection.id}}/sites/{{id}}.png');"></div>
 			<div class="last-visited">{{last_visited}}</div>
 			<h4>{{#if title}}
 					{{title}}

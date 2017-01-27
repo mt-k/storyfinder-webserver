@@ -135,7 +135,7 @@ module.exports = function(db, alias, tbl){
 		}
 		
 		var q = 'SELECT ' + fields.join(',') + ' FROM `' + tbl + '` `' + alias + '` WHERE ' + where + group + order + limit;
-		console.log(q);
+		//console.log(q);
 		db.query(q, function(err, results, fields){
 			if(err){
 				setImmediate(function(){callback(err);});
@@ -260,7 +260,7 @@ module.exports = function(db, alias, tbl){
 					if(err)return setImmediate(() => callback(err));
 				
 					var q = 'UPDATE `' + tbl + '` SET ' + _.keys(options.values).join('=?, ') + '=? WHERE ' + where + limit;
-					console.log(q, _.values(options.values));
+					//console.log(q, _.values(options.values));
 				
 					db.query(q, _.values(options.values), (err) => {
 						if(err)return setImmediate(() => callback(err));

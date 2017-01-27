@@ -5,6 +5,12 @@ var _ = require('lodash')
 	;
 
 module.exports = function(options, elNew, elExisting, renderGraph, node, label, link){
+	function getScalingFactor(d){
+		if(!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf))
+			return d.tfidf;
+		return d.pageRank;
+	}
+	
 	/*
 		Bereits vorhandene Nodes und Links zur neuen Position bewegen
 	*/
@@ -16,9 +22,9 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 				var transition = elExisting.labels
 					.attr('transform', function(d){
 						if(!_.isUndefined(d.prevData)){
-							return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (d.prevData.pageRank / 2 + 0.75) + ')';
+							return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (getScalingFactor(d.prevData) / 2 + 0.75) + ')';
 						}else{
-							return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+							return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 						}
 					})
 					.transition()
@@ -26,13 +32,13 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 					.attrTween('transform', function(d,i,a){
 						var x = [d.x, d.x]
 							, y = [d.y, d.y]
-							, p= [d.pageRank, d.pageRank]
+							, p = [getScalingFactor(d), getScalingFactor(d)]
 							;
 											
 						if(!_.isUndefined(d.prevData)){
 							x[0] = d.prevData.x;
 							y[0] = d.prevData.y;
-							p[0] = d.prevData.pageRank;
+							p[0] = getScalingFactor(d.prevData);
 						}
 						
 						return function(t){

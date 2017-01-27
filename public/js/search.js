@@ -45,18 +45,23 @@ module.exports = function(store, vis){
 		
 		searchDelegate.on('click', '.entity', function(event){
 			clear();
-			vis.highlight(parseInt(event.target.getAttribute('data-id')));
+			vis.highlight(parseInt(event.target.getAttribute('data-id')), () => {
+				vis.selectNode('.label[data-id="' + parseInt(event.target.getAttribute('data-id')) + '"]');
+			});
 			return false;
 		});
 	}
 	
 	function clear(){
 		var input = document.body.querySelector('#graph-title .btn-search > input');
-		input.value = '';
-		input.blur();
-		input.classList.remove('active');
-		input.parentNode.classList.remove('active');
-		elResults.classList.remove('active');
+		if(input != null){
+			input.value = '';
+			input.blur();
+			input.classList.remove('active');
+			input.parentNode.classList.remove('active');
+		}
+		if(elResults != null)
+			elResults.classList.remove('active');
 	}
 	
 	function search(searchValue, callback){
@@ -140,6 +145,8 @@ module.exports = function(store, vis){
 		if(!_.isNull(prevY))
 			rescale(prevY);
 	}
+	
+	this.clear = clear;
 	
 	initialize();
 }

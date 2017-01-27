@@ -3,6 +3,7 @@ var _ = require('lodash')
 	, fs = require('fs')
 	, path = require('path')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
+	, evallog = new (require('../libs/evallog.js'))()
 	;
 	
 module.exports = function(connection, app, passport){
@@ -16,6 +17,8 @@ module.exports = function(connection, app, passport){
 		var userId = req.user.id
 			, articleId = req.params.articleId
 			;
+			
+		evallog.log('Open article ' + articleId);
 			
 		async.waterfall([
 			(next) => setImmediate(() => next(null, {article_id: articleId})),

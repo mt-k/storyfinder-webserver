@@ -3,6 +3,12 @@ var _ = require('lodash')
 	;
 
 module.exports = function(options, renderGraph, node, label, link){
+	function getScalingFactor(d){
+		if(!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf))
+			return d.tfidf;
+		return d.pageRank;
+	}
+	
 	/*
 		Geloeschte Elemente im Graphen ausblenden	
 	*/
@@ -62,7 +68,7 @@ module.exports = function(options, renderGraph, node, label, link){
 							}
 							
 							return function(t){
-								var ret = 'translate(' + Math.round(x[0] * (1 - t) + x[1] * t) + ',' + Math.round(y[0] * (1 - t) + y[1] * t) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+								var ret = 'translate(' + Math.round(x[0] * (1 - t) + x[1] * t) + ',' + Math.round(y[0] * (1 - t) + y[1] * t) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 								return ret;
 							}
 						})

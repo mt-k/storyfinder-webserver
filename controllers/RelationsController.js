@@ -2,6 +2,7 @@ var _ = require('lodash')
 	, async = require('async')
 	, fs = require('fs')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
+	, evallog = new (require('../libs/evallog.js'))()
 	;
 	
 module.exports = function(connection, app, passport){
@@ -16,6 +17,8 @@ module.exports = function(connection, app, passport){
 		var entityId = parseInt(req.params.entityId)
 			, userId = req.user.id
 			;
+
+		evallog.log('Get relations of entity ' + entityId);
 
 		async.waterfall([
 			(next) => {setImmediate(() => next(null, {user_id: userId, entity_id: entityId}))},
@@ -38,6 +41,9 @@ module.exports = function(connection, app, passport){
 			, entity2Id = parseInt(req.params.entity2Id)
 			, userId = req.user.id
 			;
+			
+		
+		evallog.log('Get relations of entities ' + entity1Id + ' / ' + entity2Id);
 
 		async.waterfall([
 			(next) => {setImmediate(() => next(null, {user_id: userId, entity_ids: [entity1Id, entity2Id]}))},
@@ -64,6 +70,8 @@ module.exports = function(connection, app, passport){
 			, sentenceId = req.body.sentence_id
 			, label = req.body.label
 			;
+
+		evallog.log('Set relation of entities ' + entity1Id + ' / ' + entity2Id + ' with label ' + label);
 
 		async.waterfall([
 			(next) => {

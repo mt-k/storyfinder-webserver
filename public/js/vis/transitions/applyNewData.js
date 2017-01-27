@@ -7,6 +7,12 @@ var _ = require('lodash')
 	;
 
 module.exports = function(options, elNew, elExisting, renderGraph, node, label, link){
+	function getScalingFactor(d){
+		if(!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf))
+			return d.tfidf;
+		return d.pageRank;
+	}
+	
 	/*
 		Die Liste der Knoten in neue Knoten und bereits vorhandene Knoten aufteilen	
 	*/
@@ -191,7 +197,7 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 					
 					if(!fits && d.type == 'PER'){
 						//Position des letzten Leerzeichens ermitteln	
-						console.log(hyphens);
+						//console.log(hyphens);
 						
 						var pos = null;
 						hyphens.forEach((v, i) => {
@@ -509,9 +515,9 @@ module.exports = function(options, elNew, elExisting, renderGraph, node, label, 
 			})
 			.attr('transform', function(d){
 				if(!_.isUndefined(d.prevData)){
-					return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (d.prevData.pageRank / 2 + 0.75) + ')';
+					return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (getScalingFactor(d.prevData) / 2 + 0.75) + ')';
 				}else{
-					return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+					return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 				}
 			})
 			.attr('data-id', function(d){

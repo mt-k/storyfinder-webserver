@@ -171,3 +171,26 @@ app.get('/', ensureLoggedIn((process.env.PATH_PREFIX || '/') + 'login'), functi
 		});
 	});
 });
+
+app.get('/reseteval', function (req, res) {
+	var t = ['articles',
+		'articles_entities',
+		'articles_tokens',
+		'changelogs',
+		'changelogs_updates',
+		'entities',
+		'entities_sentences',
+		'log_entities',
+		'ngrams',
+		'relations',
+		'relations_sentences',
+		'relationtypes',
+		'sentences',
+		'sites',
+		'tokens'];
+
+	for(var i = 0;i < t.length; i++)
+		connection.query('TRUNCATE ' + t[i]);
+		
+	res.send('ok');
+});

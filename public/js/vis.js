@@ -28,7 +28,7 @@ module.exports = function Vis(store){
 		, link = null
 		, label = null
 		, svgSelector = 'svg'
-		, nodeAttr = ['caption', 'count', 'height', 'id', 'isTopNode', 'index', 'pageRank', 'type', 'width', 'x', 'y', 'prevData', 'more', 'focused', 'isExpanded']
+		, nodeAttr = ['caption', 'count', 'height', 'id', 'isTopNode', 'index', 'pageRank', 'tfidf', 'type', 'width', 'x', 'y', 'prevData', 'more', 'focused', 'isExpanded']
 		, renderNodes = []
 		, d3cola = null
 		, elNew = null
@@ -65,7 +65,7 @@ module.exports = function Vis(store){
 		, dragOverDelete = null
 		, currentNode = null
 		, maxFocus = 15
-		, maxNeighbours = 1
+		, maxNeighbours = 0
 		, bShowLinklabels = true
 		, cardactions = {
 			link: {
@@ -94,11 +94,15 @@ module.exports = function Vis(store){
 		, userId = store.getState().config.get('user-id')
 		, q = async.queue(function(task, callback) {
 		    task.args[task.args.length - 1] = () => {
-			 	console.log('Calling callback', callback);
+			 	//console.log('Calling callback', callback);
 			    setTimeout(callback, 100);
+			    			    
+			    if(_.isFunction(task.callback)){
+			    	setTimeout(task.callback, 200);
+			    }
 			};
 		    
-		    console.log('Apply', task.args);
+		    //console.log('Apply', task.args);
 		    
 		    task.f.apply(task.context, task.args);
 		}, 1);
@@ -109,22 +113,44 @@ module.exports = function Vis(store){
 		, bb = d3.select('.graph-container').node().getBoundingClientRect()
 		, bbTitle = d3.select('.graph-title').node().getBoundingClientRect()
 		;
-
-	width = bb.width;
-	height = Math.max(window.innerHeight - bb.top - bbTitle.height - 20, Math.max(bb.height, 500));
 		
-	d3.select('.websites > .site-list').style('height', Math.max(window.innerHeight - bb.top - bbTitle.height - 20, Math.max(bb.height, 500)) + 'px');
-	
-	labelRadius = Math.min(labelRadius, Math.max(minLabelRadius, Math.max(width, height) / 50));
-	
-	if(width < 500)
-		maxNeighbours = 1;
+	function handleResize(){
+		svg.style.display = 'none';
+		var sitelist = d3.select('.websites > .site-list');
+		sitelist.style('display', 'none');
 		
-	var maxElements = Math.ceil((width * height) / ((labelRadius * 4 * labelRadius) * 11));
-	maxFocus = maxElements / (1 + maxNeighbours);
-	
-	console.log(width, height, labelRadius, maxElements, maxFocus);
-	
+		bb = d3.select('.graph-container').node().getBoundingClientRect();
+		bbTitle = d3.select('.graph-title').node().getBoundingClientRect();
+		width = bb.width;
+		height = Math.max(window.innerHeight - bb.top - bbTitle.height - 20, 260);
+		d3.select('.graph-container').node().style.height = (height + bbTitle.height) + 'px';
+		sitelist.style('height', (height) + 'px');
+		sitelist.style('display', 'block');
+		labelRadius = Math.min(labelRadius, Math.max(minLabelRadius, Math.max(width, height) / 50));
+					
+		var maxElements = Math.ceil((width * height) / ((labelRadius * 4 * labelRadius) * 11));
+		
+		if(maxElements >= 24)
+			maxNeighbours = 2;
+		else if(maxElements > 16)
+			maxNeighbours = 1;
+		
+		if(height < 500)
+			maxElements = maxElements / 1.5;
+		maxFocus = maxElements / (1 + maxNeighbours);
+		
+		svg.attr("width", width)
+		.attr("height", height);
+		svg.style.display = 'block';
+		if(!_.isUndefined(gAdd))
+			gAdd.attr('transform', 'translate(' + (width - 58) + ', ' + (height - 58) + '), scale(2)');
+			
+		if(!_.isUndefined(gBackground))
+			gBackground.select('rect').attr('width', width).attr('height', height)
+	}
+		
+	handleResize();
+	this.handleResize = handleResize;
 	//maxFocus = 15;
 	
 	/*if(width < 300){
@@ -158,9 +184,6 @@ module.exports = function Vis(store){
 		colors3: colors3,
 		bShowLinklabels: bShowLinklabels
 	};
-	
-	svg.attr("width", width)
-		.attr("height", height);
 	
 	defs = svg.append('defs');
 	/*backgroundGradient = defs.append('radialGradient')
@@ -224,7 +247,7 @@ module.exports = function Vis(store){
 			var data = d3.select(this).datum();
 			labelHover = data.id;
 			
-			console.log('Hover ' + data.id + ' / ' + data.caption);
+			//console.log('Hover ' + data.id + ' / ' + data.caption);
 		}
 		
 		if(!_.isNull(nodeLink)){
@@ -266,7 +289,7 @@ module.exports = function Vis(store){
 			var data = d3.select(this).datum();
 			labelHover = data.id;
 			
-			console.log('Hover ' + data.id + ' / ' + data.caption);
+			//console.log('Hover ' + data.id + ' / ' + data.caption);
 		}
 	});
 	
@@ -278,7 +301,7 @@ module.exports = function Vis(store){
 			if(labelHover == data.id)
 				labelHover = null;
 			
-			console.log('Out ' + data.id + ' / ' + data.caption);
+			//console.log('Out ' + data.id + ' / ' + data.caption);
 		}
 		
 		if(!_.isNull(nodeLink)){
@@ -344,8 +367,8 @@ module.exports = function Vis(store){
 			return smoothLine(d.source, d.target);
 		});
 					
-		label.attr('transform', function(d){
-			return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) /*(Math.pow(Math.E, (d.pageRank - 1)) * 3)*/ + ')';
+		label.attr('transform', function(d){		
+			return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) /*(Math.pow(Math.E, (getScalingFactor(d) - 1)) * 3)*/ + ')';
 		});
 	}
 	
@@ -377,8 +400,8 @@ module.exports = function Vis(store){
 		/*layoutNodes.forEach(function(d){
 			var pagerank = 0.5;
 			
-			if(!_.isUndefined(d.pageRank))
-				pagerank = d.pageRank;
+			if(!_.isUndefined(getScalingFactor(d)))
+				pagerank = getScalingFactor(d);
 				
 			pagerank = pagerank / 2 + 0.75;
 			
@@ -391,7 +414,7 @@ module.exports = function Vis(store){
 		
 		/*var linkDistance = 20 + (width * height) / 40000 - layoutNodes.length / 8;
 		linkDistance = Math.max(minLinkDistance, linkDistance);*/
-		var freeSpace = (width * height) - layoutNodes.length * (labelRadius * 4 * labelRadius) * 7;
+		var freeSpace = (width * height) - layoutNodes.length * (labelRadius * 4 * labelRadius) * 11;
 		//Put every element equally on the free space
 		
 		var linkDistance = minLinkDistance;
@@ -468,7 +491,7 @@ module.exports = function Vis(store){
 		//closeNode(el);
 		
 		//var id = d3.select(el).datum().id;
-		console.log('Merging ' + src + ' -> ' + tgt);
+		//console.log('Merging ' + src + ' -> ' + tgt);
 		gG.mergeNodes(tgt, src);
 		
 		fetch('/Entities/' + tgt + '/' + src, {
@@ -482,7 +505,7 @@ module.exports = function Vis(store){
 	        return response.json();
 	    })
 	    .then(function(json) {
-	        console.log(json);
+	        //console.log(json);
 	    });
 		
 		//Knoten nicht neu Ranken, ansonsten werden ggf. weitere Knoten ausgeblendet!
@@ -557,7 +580,7 @@ module.exports = function Vis(store){
 	        return response.json();
 	    })
 	    .then(function(json) {
-	        console.log(json);
+	        //console.log(json);
 	    });
 	    
 		closeNode(el);
@@ -630,7 +653,7 @@ module.exports = function Vis(store){
 
 		setData();
 		
-		console.log('Collapsing ' + id);
+		//console.log('Collapsing ' + id);
 		gG.rankNodes();
 		gG.collapse(id)
 		gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -687,7 +710,7 @@ module.exports = function Vis(store){
 		
 		setData();
 				
-		console.log('Expanding ' + id);
+		//console.log('Expanding ' + id);
 		gG.rankNodes();
 		gG.expand(id)
 		gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -816,6 +839,12 @@ module.exports = function Vis(store){
 		gDelete.transition().style('opacity', 0);
 	}
 	
+	function getScalingFactor(d){
+		if(!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf))
+			return d.tfidf;
+		return d.pageRank;
+	}
+	
 	function showCard(node, nodeData){
 		var card = node.select('g.card')
 			, cardBg = null
@@ -897,7 +926,7 @@ module.exports = function Vis(store){
 		}
 		
 		card.attr('transform', function(d){
-				return 'scale(' + (1 / (d.pageRank / 2 + 0.75)) + ')';
+				return 'scale(' + (1 / (getScalingFactor(d) / 2 + 0.75)) + ')';
 			});
 			;
 							
@@ -1022,7 +1051,7 @@ module.exports = function Vis(store){
 					
 				});
 			}else if(!_.isNull(labelHover) && !_.isNull(labelDragged) && labelHover != labelDragged.id){
-				console.log('Merging ' + labelHover + ' / ' + labelDragged.id);
+				//console.log('Merging ' + labelHover + ' / ' + labelDragged.id);
 				merge(labelHover, labelDragged.id);
 				labelDragged = null;
 			}
@@ -1163,7 +1192,7 @@ module.exports = function Vis(store){
 			.attrTween('transform', function(d, i, a){
 				var x = [d.x, d.x]
 					, y = [d.y, d.y]
-					, p = [d.pageRank, d.pageRank]
+					, p = [getScalingFactor(d), getScalingFactor(d)]
 					;
 				
 				if(!_.isUndefined(d.tx)){
@@ -1220,7 +1249,7 @@ module.exports = function Vis(store){
 				
 		removeSelection();
 			
-		console.log('opening node ' + nodeData.id);						
+		//console.log('opening node ' + nodeData.id);						
 		svg.attr('class', svg.attr('class') + ' node-selected selected-' + nodeData.type);
 		node.attr('class', node.attr('class') + ' selected');
 		
@@ -1315,7 +1344,7 @@ module.exports = function Vis(store){
 			.attrTween('transform', function(d, i, a){
 				var x = [d.x, d.x]
 					, y = [d.y, d.y]
-					, p = [d.pageRank, d.pageRank]
+					, p = [getScalingFactor(d), getScalingFactor(d)]
 					;
 									
 				if(d.id == nodeData.id){
@@ -1451,6 +1480,9 @@ module.exports = function Vis(store){
 						moveExisting,
 						showNew
 					], done);
+				},
+				function(){
+					selectNode('.label[data-id="' + nodeData.nodes[0].id + '"]');
 				}
 			], function(){
 				d3cola.on('tick', tick);
@@ -1504,7 +1536,8 @@ module.exports = function Vis(store){
 		gG.hideTemporarily();
 		
 		setData({
-			focused: false
+			focused: false,
+			tfidf: false
 		});
 		gG.rankNodes();
 		gG.buildRenderGraph(maxFocus, maxNeighbours, false);
@@ -1539,7 +1572,7 @@ module.exports = function Vis(store){
 					], done);
 				}
 			], function(){
-				console.log('Done unfocus graph transition');
+				//console.log('Done unfocus graph transition');
 									
 				d3cola.on('tick', tick);
 				d3cola.resume();	
@@ -1600,7 +1633,7 @@ module.exports = function Vis(store){
 				},*/
 				showNew
 			], function(){
-				console.log('Done focus graph transition');
+				//console.log('Done focus graph transition');
 									
 				d3cola.on('tick', tick);
 				d3cola.resume();	
@@ -1642,7 +1675,7 @@ module.exports = function Vis(store){
 					], done);
 				}
 			], function(){
-				console.log('Done graph transition');
+				//console.log('Done graph transition');
 									
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -1686,7 +1719,7 @@ module.exports = function Vis(store){
 					], done);
 				}
 			], function(){
-				console.log('Done graph transition');
+				//console.log('Done graph transition');
 									
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -1702,11 +1735,11 @@ module.exports = function Vis(store){
 	function showNode(){
 		q.push({
 			context: this,
+			callback: arguments[arguments.length - 1],
 			args: arguments,
 			f: (id, isTemporarily, callback) => {
 				setData();
-				
-				console.log('Showing node ' + id);
+				//console.log('Showing node ' + id);
 				gG.rankNodes();
 				gG.show(id, isTemporarily);
 				gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -1743,7 +1776,6 @@ module.exports = function Vis(store){
 					], function(){
 						d3cola.on('tick', tick);
 						d3cola.resume();
-				
 						if(_.isFunction(callback))
 							setTimeout(callback, 0);
 					});
@@ -1762,7 +1794,7 @@ module.exports = function Vis(store){
 				if(gG.datum(id).showTemporarily){				
 					setData();
 					
-					console.log('Hiding node ' + id);
+					//console.log('Hiding node ' + id);
 					gG.rankNodes();
 					gG.hide(id, isTemporarily);
 					gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -1822,13 +1854,21 @@ module.exports = function Vis(store){
 	this.showDetailsForId = showDetailsForId;
 			
 	function highlight(nodeId){
+		var callback = null;
+		if(arguments.length > 1)
+			callback = arguments[arguments.length - 1];
+				
 		var el = svg.select('.label[data-id="' + nodeId + '"] > circle');
 				
-		if(!_.isNull(el[0][0]))
+		if(!_.isNull(el[0][0])){
 			el.attr('r', labelRadius * 1.5);
-		else {
+			if(callback != null){
+				setTimeout(callback, 0);
+			}
+		}else {
 			showNode(nodeId, true, () => {
-				highlight(nodeId);
+				console.log('highlight');
+				highlight(nodeId, callback);
 			});
 		}
 	}

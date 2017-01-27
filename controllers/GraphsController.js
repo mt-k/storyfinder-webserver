@@ -2,6 +2,7 @@ var _ = require('lodash')
 	, async = require('async')
 	, fs = require('fs')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
+	, evallog = new (require('../libs/evallog.js'))()
 	;
 	
 module.exports = function(connection, app, passport){
@@ -38,6 +39,8 @@ module.exports = function(connection, app, passport){
 		var userId = req.user.id
 			, siteId = parseInt(req.params.siteId)
 			;
+			
+		evallog.log('Open graph ' + req.params.siteId);
 
 		async.waterfall([
 			(next) => {
@@ -63,6 +66,8 @@ module.exports = function(connection, app, passport){
 		var userId = req.user.id
 			, siteIds = _.map(req.params.siteIds.split(';'), siteId => parseInt(siteId))
 			;
+
+		evallog.log('Open group ' + siteIds.join(';'));
 
 		async.waterfall([
 			(next) => {

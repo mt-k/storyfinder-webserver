@@ -36,6 +36,19 @@ module.exports = function(db){
 	
 	this.getInArticle = getInArticle;
 	
+	function getDocumentfrequency(entityId, callback){
+		datasource.find('list', {
+			fields: ['entity_id', 'count(*) `df`'],
+			conditions: {
+				entity_id: entityId,
+				is_deleted: 0
+			},
+			group: 'entity_id'
+		}, callback);
+	}
+	
+	this.getDocumentfrequency = getDocumentfrequency;
+	
 	function findArticlesWithEntity(entityId, callback){
 		datasource.find('list', {
 			fields: ['article_id', 'id', 'entity_id', 'count'],

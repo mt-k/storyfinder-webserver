@@ -24,7 +24,7 @@ function buildConditions(conditions){
 			if(conditions[key] == null && rel == '='){
 				args.push('`' + key + '` IS NULL');
 			}else{				
-				console.log(typeof val);
+				//console.log(typeof val);
 				
 				if(_.isArray(val)){
 					val = '("' + _.map(val, function(v){

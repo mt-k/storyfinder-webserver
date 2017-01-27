@@ -346,6 +346,7 @@ module.exports = function (store) {
 
 	store.subscribe(function () {
 		var state = store.getState().storyfinder;
+		search.clear();
 		switch (state.get('state')) {
 			case 'graph-to-relation':
 				vis.toRelation(state.get('entity1_id'), state.get('entity2_id'), function () {
@@ -864,7 +865,7 @@ module.exports = function (store) {
 			focusSite(id);
 			return false;
 		} else {
-			menu.classList.remove('active');
+			//menu.classList.remove('active');	
 			this.classList.add('focused');
 
 			var ids = [];
@@ -1020,12 +1021,17 @@ module.exports = function (store) {
 		isActive = false;
 	}
 
+	var _handleResize = _.debounce(function () {
+		vis.handleResize();
+	}, 300);
+
 	current();
 	loadSites();
 
 	io.on('new_site', function (site) {
 		if (!isActive) return false;
-		//alert('Received site');		
+		//alert('Received site');
+		search.clear();
 		if (site.is_relevant || !site.is_new) {
 			hideSiteNotRelevant();
 			sites.push(site.Site);
@@ -1039,6 +1045,7 @@ module.exports = function (store) {
 
 	io.on('parsing_site', function (site) {
 		if (!isActive) return false;
+		search.clear();
 		graphTitle.innerHTML = tplGraphtitle({ loading: true });
 	});
 
@@ -1049,6 +1056,7 @@ module.exports = function (store) {
 
 	io.on('new_entity', function (data) {
 		if (!isActive) return false;
+		search.clear();
 
 		if (typeof parent != 'undefined' && parent != null) {
 			parent.postMessage(["msg", {
@@ -1067,6 +1075,8 @@ module.exports = function (store) {
 	});
 
 	window.addEventListener("message", receiveMessage, false);
+
+	window.addEventListener("resize", _handleResize);
 
 	function receiveMessage(event) {
 		var origin = event.origin || event.originalEvent.origin; // For Chrome, the origin property is in the event.originalEvent object.
@@ -1231,6 +1241,9 @@ module.exports = function (store) {
 			} else {
 				if (!_.isUndefined(focus) && focus) {
 					nodes[indexMap[id]].focused = true;
+					if (!_.isUndefined(node.tfidf)) nodes[indexMap[id]].tfidf = node.tfidf;
+				} else {
+					if (!_.isUndefined(nodes[indexMap[id]].tfidf)) delete nodes[indexMap[id]].tfidf;
 				}
 			}
 		});
@@ -1330,6 +1343,9 @@ module.exports = function (store) {
 		_.each(graph.links, function (link) {
 			var id = link.entity1_id + ',' + link.entity2_id;
 
+			link.entity1_id = parseInt(link.entity1_id);
+			link.entity2_id = parseInt(link.entity2_id);
+
 			if (!_.isUndefined(linksInGraph[id])) {
 				linkIndex = linksInGraph[id];
 
@@ -1340,9 +1356,11 @@ module.exports = function (store) {
 
 				return;
 			}
-
-			link.Relation.Relationtype = link.Relationtype;
-			link = link.Relation;
+			/*console.log('Ok 2');
+   if(_.isUndefined(link.Relation) || _.isUndefined(link.Relationtype))
+   	link.Relation.Relationtype = link.Relationtype;
+   console.log('Ok 3');
+   link = link.Relation;*/
 
 			if (_.isUndefined(indexMap[link.entity1_id]) || _.isUndefined(indexMap[link.entity2_id])) {
 				return null;
@@ -1567,7 +1585,16 @@ module.exports = function (store) {
 		/*
   Nur die #topNodes Top Knoten und davon jeweils die #leafs wichtigsten Nachbarn werden gerendert	
   */
-		var pageRankByNode = _.map(nodes, 'pageRank');
+		var pageRankByNode = _.map(nodes, function (node) {
+			if (addFocus) {
+				if (!_.isUndefined(node.focused) && node.focused) {
+					//console.log('calc', node.tfidf);
+					return node.tfidf;
+				}
+			}
+
+			return node.pageRank;
+		});
 
 		for (var i = 0; i < pageRankByNode.length; i++) {
 			pageRankByNode[i] = { idx: i, pageRank: pageRankByNode[i] };
@@ -1684,7 +1711,9 @@ module.exports = function (store) {
 					var bFocused = !_.isUndefined(nodes[bId].focused) && nodes[bId].focused;
 
 					if (aFocused && !bFocused) return -1;else if (bFocused && !aFocused) return 1;
+					if (aFocused && bFocused) return b.tfidf - a.tfidf;
 				}
+
 				return b.pageRank - a.pageRank;
 			});
 
@@ -53227,18 +53256,22 @@ module.exports = function (store, vis) {
 
 		searchDelegate.on('click', '.entity', function (event) {
 			clear();
-			vis.highlight(parseInt(event.target.getAttribute('data-id')));
+			vis.highlight(parseInt(event.target.getAttribute('data-id')), function () {
+				vis.selectNode('.label[data-id="' + parseInt(event.target.getAttribute('data-id')) + '"]');
+			});
 			return false;
 		});
 	}
 
 	function clear() {
 		var input = document.body.querySelector('#graph-title .btn-search > input');
-		input.value = '';
-		input.blur();
-		input.classList.remove('active');
-		input.parentNode.classList.remove('active');
-		elResults.classList.remove('active');
+		if (input != null) {
+			input.value = '';
+			input.blur();
+			input.classList.remove('active');
+			input.parentNode.classList.remove('active');
+		}
+		if (elResults != null) elResults.classList.remove('active');
 	}
 
 	function search(searchValue, callback) {
@@ -53337,6 +53370,8 @@ module.exports = function (store, vis) {
 
 		if (!_.isNull(prevY)) rescale(prevY);
 	}
+
+	this.clear = clear;
 
 	initialize();
 };
@@ -53708,27 +53743,29 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
 },{"hbsfy/runtime":57}],118:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
-module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
-    var stack1, helper, alias1=depth0 != null ? depth0 : {}, alias2=helpers.helperMissing, alias3="function", alias4=container.escapeExpression;
+module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
+    var stack1, helper, alias1=depth0 != null ? depth0 : {}, alias2=container.lambda, alias3=container.escapeExpression, alias4=helpers.helperMissing, alias5="function";
 
   return "	<div class=\"col-md-4\">\n		<div class=\"site"
-    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"unless","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.isLight : depth0),{"name":"if","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers.unless.call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"unless","hash":{},"fn":container.program(2, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.isLight : depth0),{"name":"if","hash":{},"fn":container.program(2, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "\" style=\""
-    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-    + "\">\n			<div class=\"thumbnail\" style=\"background-image: url('/images/1/sites/"
-    + alias4(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"id","hash":{},"data":data}) : helper)))
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.primary_color : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "\">\n			<div class=\"thumbnail\" style=\"background-image: url('/images/"
+    + alias3(alias2(((stack1 = (depths[1] != null ? depths[1].Collection : depths[1])) != null ? stack1.id : stack1), depth0))
+    + "/sites/"
+    + alias3(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias4),(typeof helper === alias5 ? helper.call(alias1,{"name":"id","hash":{},"data":data}) : helper)))
     + ".png');\"></div>\n			<div class=\"last-visited\">"
-    + alias4(((helper = (helper = helpers.last_visited || (depth0 != null ? depth0.last_visited : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"last_visited","hash":{},"data":data}) : helper)))
+    + alias3(((helper = (helper = helpers.last_visited || (depth0 != null ? depth0.last_visited : depth0)) != null ? helper : alias4),(typeof helper === alias5 ? helper.call(alias1,{"name":"last_visited","hash":{},"data":data}) : helper)))
     + "</div>\n			<h4>"
-    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.title : depth0),{"name":"if","hash":{},"fn":container.program(6, data, 0),"inverse":container.program(8, data, 0),"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.title : depth0),{"name":"if","hash":{},"fn":container.program(6, data, 0, blockParams, depths),"inverse":container.program(8, data, 0, blockParams, depths),"data":data})) != null ? stack1 : "")
     + "			</h4>\n			<div class=\"sentences\">\n"
-    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.sentences : stack1),{"name":"each","hash":{},"fn":container.program(10, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.sentencesMore : depth0),{"name":"if","hash":{},"fn":container.program(12, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.sentences : stack1),{"name":"each","hash":{},"fn":container.program(10, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers["if"].call(alias1,(depth0 != null ? depth0.sentencesMore : depth0),{"name":"if","hash":{},"fn":container.program(12, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "			</div>\n			<ul>\n				<li><a href=\""
-    + alias4(((helper = (helper = helpers.url || (depth0 != null ? depth0.url : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"url","hash":{},"data":data}) : helper)))
+    + alias3(((helper = (helper = helpers.url || (depth0 != null ? depth0.url : depth0)) != null ? helper : alias4),(typeof helper === alias5 ? helper.call(alias1,{"name":"url","hash":{},"data":data}) : helper)))
     + "\" target=\"_blank\">Open site</a></li>\n				<li><a href=\"/Articles/"
-    + alias4(container.lambda(((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.id : stack1), depth0))
+    + alias3(alias2(((stack1 = (depth0 != null ? depth0.Article : depth0)) != null ? stack1.id : stack1), depth0))
     + "\" target=\"_blank\">Open archived article</a></li>\n			</ul>\n		</div>\n	</div>\n";
 },"2":function(container,depth0,helpers,partials,data) {
     return " is-light";
@@ -53767,13 +53804,13 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + " more sentences<i class=\"fa fa-chevron-down pull-right\"></i></div>\n					<div class=\"action-hide\">Hide "
     + alias4(((helper = (helper = helpers.sentencesMore || (depth0 != null ? depth0.sentencesMore : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(alias1,{"name":"sentencesMore","hash":{},"data":data}) : helper)))
     + " sentences<i class=\"fa fa-chevron-up pull-right\"></i></div>\n				</div>\n";
-},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data,blockParams,depths) {
     var stack1;
 
   return "<div class=\"container-fluid\">\n"
-    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.Sites : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},(depth0 != null ? depth0.Sites : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
     + "</div>";
-},"useData":true});
+},"useData":true,"useDepths":true});
 
 },{"hbsfy/runtime":57}],119:[function(require,module,exports){
 'use strict';
@@ -53808,7 +53845,7 @@ module.exports = function Vis(store) {
 	    link = null,
 	    label = null,
 	    svgSelector = 'svg',
-	    nodeAttr = ['caption', 'count', 'height', 'id', 'isTopNode', 'index', 'pageRank', 'type', 'width', 'x', 'y', 'prevData', 'more', 'focused', 'isExpanded'],
+	    nodeAttr = ['caption', 'count', 'height', 'id', 'isTopNode', 'index', 'pageRank', 'tfidf', 'type', 'width', 'x', 'y', 'prevData', 'more', 'focused', 'isExpanded'],
 	    renderNodes = [],
 	    d3cola = null,
 	    elNew = null,
@@ -53846,7 +53883,7 @@ module.exports = function Vis(store) {
 	    dragOverDelete = null,
 	    currentNode = null,
 	    maxFocus = 15,
-	    maxNeighbours = 1,
+	    maxNeighbours = 0,
 	    bShowLinklabels = true,
 	    cardactions = {
 		link: {
@@ -53876,11 +53913,15 @@ module.exports = function Vis(store) {
 	    userId = store.getState().config.get('user-id'),
 	    q = async.queue(function (task, callback) {
 		task.args[task.args.length - 1] = function () {
-			console.log('Calling callback', callback);
+			//console.log('Calling callback', callback);
 			setTimeout(callback, 100);
+
+			if (_.isFunction(task.callback)) {
+				setTimeout(task.callback, 200);
+			}
 		};
 
-		console.log('Apply', task.args);
+		//console.log('Apply', task.args);
 
 		task.f.apply(task.context, task.args);
 	}, 1);
@@ -53891,20 +53932,36 @@ module.exports = function Vis(store) {
 	    bb = d3.select('.graph-container').node().getBoundingClientRect(),
 	    bbTitle = d3.select('.graph-title').node().getBoundingClientRect();
 
-	width = bb.width;
-	height = Math.max(window.innerHeight - bb.top - bbTitle.height - 20, Math.max(bb.height, 500));
+	function handleResize() {
+		svg.style.display = 'none';
+		var sitelist = d3.select('.websites > .site-list');
+		sitelist.style('display', 'none');
 
-	d3.select('.websites > .site-list').style('height', Math.max(window.innerHeight - bb.top - bbTitle.height - 20, Math.max(bb.height, 500)) + 'px');
+		bb = d3.select('.graph-container').node().getBoundingClientRect();
+		bbTitle = d3.select('.graph-title').node().getBoundingClientRect();
+		width = bb.width;
+		height = Math.max(window.innerHeight - bb.top - bbTitle.height - 20, 260);
+		d3.select('.graph-container').node().style.height = height + bbTitle.height + 'px';
+		sitelist.style('height', height + 'px');
+		sitelist.style('display', 'block');
+		labelRadius = Math.min(labelRadius, Math.max(minLabelRadius, Math.max(width, height) / 50));
 
-	labelRadius = Math.min(labelRadius, Math.max(minLabelRadius, Math.max(width, height) / 50));
+		var maxElements = Math.ceil(width * height / (labelRadius * 4 * labelRadius * 11));
 
-	if (width < 500) maxNeighbours = 1;
+		if (maxElements >= 24) maxNeighbours = 2;else if (maxElements > 16) maxNeighbours = 1;
 
-	var maxElements = Math.ceil(width * height / (labelRadius * 4 * labelRadius * 11));
-	maxFocus = maxElements / (1 + maxNeighbours);
+		if (height < 500) maxElements = maxElements / 1.5;
+		maxFocus = maxElements / (1 + maxNeighbours);
 
-	console.log(width, height, labelRadius, maxElements, maxFocus);
+		svg.attr("width", width).attr("height", height);
+		svg.style.display = 'block';
+		if (!_.isUndefined(gAdd)) gAdd.attr('transform', 'translate(' + (width - 58) + ', ' + (height - 58) + '), scale(2)');
 
+		if (!_.isUndefined(gBackground)) gBackground.select('rect').attr('width', width).attr('height', height);
+	}
+
+	handleResize();
+	this.handleResize = handleResize;
 	//maxFocus = 15;
 
 	/*if(width < 300){
@@ -53938,8 +53995,6 @@ module.exports = function Vis(store) {
 		colors3: colors3,
 		bShowLinklabels: bShowLinklabels
 	};
-
-	svg.attr("width", width).attr("height", height);
 
 	defs = svg.append('defs');
 	/*backgroundGradient = defs.append('radialGradient')
@@ -54001,7 +54056,7 @@ module.exports = function Vis(store) {
 			var data = d3.select(this).datum();
 			labelHover = data.id;
 
-			console.log('Hover ' + data.id + ' / ' + data.caption);
+			//console.log('Hover ' + data.id + ' / ' + data.caption);
 		}
 
 		if (!_.isNull(nodeLink)) {
@@ -54043,7 +54098,7 @@ module.exports = function Vis(store) {
 			var data = d3.select(this).datum();
 			labelHover = data.id;
 
-			console.log('Hover ' + data.id + ' / ' + data.caption);
+			//console.log('Hover ' + data.id + ' / ' + data.caption);
 		}
 	});
 
@@ -54054,7 +54109,7 @@ module.exports = function Vis(store) {
 
 			if (labelHover == data.id) labelHover = null;
 
-			console.log('Out ' + data.id + ' / ' + data.caption);
+			//console.log('Out ' + data.id + ' / ' + data.caption);
 		}
 
 		if (!_.isNull(nodeLink)) {
@@ -54117,7 +54172,7 @@ module.exports = function Vis(store) {
 		});
 
 		label.attr('transform', function (d) {
-			return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) /*(Math.pow(Math.E, (d.pageRank - 1)) * 3)*/ + ')';
+			return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) /*(Math.pow(Math.E, (getScalingFactor(d) - 1)) * 3)*/ + ')';
 		});
 	}
 
@@ -54148,8 +54203,8 @@ module.exports = function Vis(store) {
 		/*layoutNodes.forEach(function(d){
   	var pagerank = 0.5;
   	
-  	if(!_.isUndefined(d.pageRank))
-  		pagerank = d.pageRank;
+  	if(!_.isUndefined(getScalingFactor(d)))
+  		pagerank = getScalingFactor(d);
   		
   	pagerank = pagerank / 2 + 0.75;
   	
@@ -54162,7 +54217,7 @@ module.exports = function Vis(store) {
 
 		/*var linkDistance = 20 + (width * height) / 40000 - layoutNodes.length / 8;
   linkDistance = Math.max(minLinkDistance, linkDistance);*/
-		var freeSpace = width * height - layoutNodes.length * (labelRadius * 4 * labelRadius) * 7;
+		var freeSpace = width * height - layoutNodes.length * (labelRadius * 4 * labelRadius) * 11;
 		//Put every element equally on the free space
 
 		var linkDistance = minLinkDistance;
@@ -54226,7 +54281,7 @@ module.exports = function Vis(store) {
 		//closeNode(el);
 
 		//var id = d3.select(el).datum().id;
-		console.log('Merging ' + src + ' -> ' + tgt);
+		//console.log('Merging ' + src + ' -> ' + tgt);
 		gG.mergeNodes(tgt, src);
 
 		fetch('/Entities/' + tgt + '/' + src, {
@@ -54238,7 +54293,7 @@ module.exports = function Vis(store) {
 			}
 			return response.json();
 		}).then(function (json) {
-			console.log(json);
+			//console.log(json);
 		});
 
 		//Knoten nicht neu Ranken, ansonsten werden ggf. weitere Knoten ausgeblendet!
@@ -54300,7 +54355,7 @@ module.exports = function Vis(store) {
 			}
 			return response.json();
 		}).then(function (json) {
-			console.log(json);
+			//console.log(json);
 		});
 
 		closeNode(el);
@@ -54360,7 +54415,7 @@ module.exports = function Vis(store) {
 
 		setData();
 
-		console.log('Collapsing ' + id);
+		//console.log('Collapsing ' + id);
 		gG.rankNodes();
 		gG.collapse(id);
 		gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -54405,7 +54460,7 @@ module.exports = function Vis(store) {
 
 		setData();
 
-		console.log('Expanding ' + id);
+		//console.log('Expanding ' + id);
 		gG.rankNodes();
 		gG.expand(id);
 		gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -54494,6 +54549,11 @@ module.exports = function Vis(store) {
 		gDelete.transition().style('opacity', 0);
 	}
 
+	function getScalingFactor(d) {
+		if (!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf)) return d.tfidf;
+		return d.pageRank;
+	}
+
 	function showCard(node, nodeData) {
 		var card = node.select('g.card'),
 		    cardBg = null,
@@ -54548,7 +54608,7 @@ module.exports = function Vis(store) {
 		}
 
 		card.attr('transform', function (d) {
-			return 'scale(' + 1 / (d.pageRank / 2 + 0.75) + ')';
+			return 'scale(' + 1 / (getScalingFactor(d) / 2 + 0.75) + ')';
 		});
 		;
 
@@ -54620,7 +54680,7 @@ module.exports = function Vis(store) {
 			if (!_.isNull(labelDragged) && !_.isNull(dragOverDelete)) {
 				deleteNode(this, function () {});
 			} else if (!_.isNull(labelHover) && !_.isNull(labelDragged) && labelHover != labelDragged.id) {
-				console.log('Merging ' + labelHover + ' / ' + labelDragged.id);
+				//console.log('Merging ' + labelHover + ' / ' + labelDragged.id);
 				merge(labelHover, labelDragged.id);
 				labelDragged = null;
 			}
@@ -54719,7 +54779,7 @@ module.exports = function Vis(store) {
 		label.transition().ease('elastic').duration(transitionCard).attrTween('transform', function (d, i, a) {
 			var x = [d.x, d.x],
 			    y = [d.y, d.y],
-			    p = [d.pageRank, d.pageRank];
+			    p = [getScalingFactor(d), getScalingFactor(d)];
 
 			if (!_.isUndefined(d.tx)) {
 				x[0] = d.tx;
@@ -54773,7 +54833,7 @@ module.exports = function Vis(store) {
 
 		removeSelection();
 
-		console.log('opening node ' + nodeData.id);
+		//console.log('opening node ' + nodeData.id);						
 		svg.attr('class', svg.attr('class') + ' node-selected selected-' + nodeData.type);
 		node.attr('class', node.attr('class') + ' selected');
 
@@ -54858,7 +54918,7 @@ module.exports = function Vis(store) {
 		label.transition().ease('elastic').duration(_.isUndefined(transitionTime) ? transitionCard : transitionTime).attrTween('transform', function (d, i, a) {
 			var x = [d.x, d.x],
 			    y = [d.y, d.y],
-			    p = [d.pageRank, d.pageRank];
+			    p = [getScalingFactor(d), getScalingFactor(d)];
 
 			if (d.id == nodeData.id) {
 				x[1] = newPosition.x;
@@ -54969,6 +55029,8 @@ module.exports = function Vis(store) {
 
 			async.series([removeDeleted, calculateNewLayout, applyNewData, function (done) {
 				async.parallel([moveExisting, showNew], done);
+			}, function () {
+				selectNode('.label[data-id="' + nodeData.nodes[0].id + '"]');
 			}], function () {
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -55014,7 +55076,8 @@ module.exports = function Vis(store) {
 		gG.hideTemporarily();
 
 		setData({
-			focused: false
+			focused: false,
+			tfidf: false
 		});
 		gG.rankNodes();
 		gG.buildRenderGraph(maxFocus, maxNeighbours, false);
@@ -55039,7 +55102,7 @@ module.exports = function Vis(store) {
 			async.series([removeDeleted, calculateNewLayout, applyNewData, function (done) {
 				async.parallel([moveExisting, showNew], done);
 			}], function () {
-				console.log('Done unfocus graph transition');
+				//console.log('Done unfocus graph transition');
 
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -55093,7 +55156,7 @@ module.exports = function Vis(store) {
    	setTimeout(next, 5000);
    },*/
 			showNew], function () {
-				console.log('Done focus graph transition');
+				//console.log('Done focus graph transition');
 
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -55125,7 +55188,7 @@ module.exports = function Vis(store) {
 			async.series([removeDeleted, calculateNewLayout, applyNewData, function (done) {
 				async.parallel([moveExisting, showNew], done);
 			}], function () {
-				console.log('Done graph transition');
+				//console.log('Done graph transition');
 
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -55159,7 +55222,7 @@ module.exports = function Vis(store) {
 			async.series([removeDeleted, calculateNewLayout, applyNewData, function (done) {
 				async.parallel([moveExisting, showNew], done);
 			}], function () {
-				console.log('Done graph transition');
+				//console.log('Done graph transition');
 
 				d3cola.on('tick', tick);
 				d3cola.resume();
@@ -55174,11 +55237,11 @@ module.exports = function Vis(store) {
 	function showNode() {
 		q.push({
 			context: this,
+			callback: arguments[arguments.length - 1],
 			args: arguments,
 			f: function f(id, isTemporarily, callback) {
 				setData();
-
-				console.log('Showing node ' + id);
+				//console.log('Showing node ' + id);
 				gG.rankNodes();
 				gG.show(id, isTemporarily);
 				gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -55205,7 +55268,6 @@ module.exports = function Vis(store) {
 					}], function () {
 						d3cola.on('tick', tick);
 						d3cola.resume();
-
 						if (_.isFunction(callback)) setTimeout(callback, 0);
 					});
 				}
@@ -55223,7 +55285,7 @@ module.exports = function Vis(store) {
 				if (gG.datum(id).showTemporarily) {
 					setData();
 
-					console.log('Hiding node ' + id);
+					//console.log('Hiding node ' + id);
 					gG.rankNodes();
 					gG.hide(id, isTemporarily);
 					gG.buildRenderGraph(maxFocus, maxNeighbours, null);
@@ -55272,11 +55334,20 @@ module.exports = function Vis(store) {
 	this.showDetailsForId = showDetailsForId;
 
 	function highlight(nodeId) {
+		var callback = null;
+		if (arguments.length > 1) callback = arguments[arguments.length - 1];
+
 		var el = svg.select('.label[data-id="' + nodeId + '"] > circle');
 
-		if (!_.isNull(el[0][0])) el.attr('r', labelRadius * 1.5);else {
+		if (!_.isNull(el[0][0])) {
+			el.attr('r', labelRadius * 1.5);
+			if (callback != null) {
+				setTimeout(callback, 0);
+			}
+		} else {
 			showNode(nodeId, true, function () {
-				highlight(nodeId);
+				console.log('highlight');
+				highlight(nodeId, callback);
 			});
 		}
 	}
@@ -55350,6 +55421,11 @@ var _ = require('lodash'),
 ;
 
 module.exports = function (options, elNew, elExisting, renderGraph, node, label, link) {
+	function getScalingFactor(d) {
+		if (!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf)) return d.tfidf;
+		return d.pageRank;
+	}
+
 	/*
  	Die Liste der Knoten in neue Knoten und bereits vorhandene Knoten aufteilen	
  */
@@ -55521,7 +55597,7 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 
 				if (!fits && d.type == 'PER') {
 					//Position des letzten Leerzeichens ermitteln	
-					console.log(hyphens);
+					//console.log(hyphens);
 
 					var pos = null;
 					hyphens.forEach(function (v, i) {
@@ -55761,9 +55837,9 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 			return ret;
 		}).attr('transform', function (d) {
 			if (!_.isUndefined(d.prevData)) {
-				return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (d.prevData.pageRank / 2 + 0.75) + ')';
+				return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (getScalingFactor(d.prevData) / 2 + 0.75) + ')';
 			} else {
-				return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+				return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 			}
 		}).attr('data-id', function (d) {
 			return d.id;
@@ -55784,6 +55860,11 @@ var _ = require('lodash'),
     d3 = require('d3');
 
 module.exports = function (options, elNew, elExisting, renderGraph, node, label, link) {
+	function getScalingFactor(d) {
+		if (!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf)) return d.tfidf;
+		return d.pageRank;
+	}
+
 	/*
  	Bereits vorhandene Nodes und Links zur neuen Position bewegen
  */
@@ -55793,19 +55874,19 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 			var n = 0;
 			var transition = elExisting.labels.attr('transform', function (d) {
 				if (!_.isUndefined(d.prevData)) {
-					return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (d.prevData.pageRank / 2 + 0.75) + ')';
+					return 'translate(' + Math.round(d.prevData.x) + ',' + Math.round(d.prevData.y) + ') scale(' + (getScalingFactor(d.prevData) / 2 + 0.75) + ')';
 				} else {
-					return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+					return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 				}
 			}).transition().duration(options.transitionUpdate).attrTween('transform', function (d, i, a) {
 				var x = [d.x, d.x],
 				    y = [d.y, d.y],
-				    p = [d.pageRank, d.pageRank];
+				    p = [getScalingFactor(d), getScalingFactor(d)];
 
 				if (!_.isUndefined(d.prevData)) {
 					x[0] = d.prevData.x;
 					y[0] = d.prevData.y;
-					p[0] = d.prevData.pageRank;
+					p[0] = getScalingFactor(d.prevData);
 				}
 
 				return function (t) {
@@ -55888,6 +55969,11 @@ var _ = require('lodash'),
     async = require('async');
 
 module.exports = function (options, renderGraph, node, label, link) {
+	function getScalingFactor(d) {
+		if (!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf)) return d.tfidf;
+		return d.pageRank;
+	}
+
 	/*
  	Geloeschte Elemente im Graphen ausblenden	
  */
@@ -55940,7 +56026,7 @@ module.exports = function (options, renderGraph, node, label, link) {
 					}
 
 					return function (t) {
-						var ret = 'translate(' + Math.round(x[0] * (1 - t) + x[1] * t) + ',' + Math.round(y[0] * (1 - t) + y[1] * t) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+						var ret = 'translate(' + Math.round(x[0] * (1 - t) + x[1] * t) + ',' + Math.round(y[0] * (1 - t) + y[1] * t) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 						return ret;
 					};
 				}).attr('opacity', _.isNull(srcData) ? 1 : 0).each('end', function () {
@@ -55974,6 +56060,11 @@ var _ = require('lodash'),
     d3 = require('d3');
 
 module.exports = function (options, elNew, elExisting, renderGraph, node, label, link) {
+	function getScalingFactor(d) {
+		if (!_.isUndefined(d.focused) && d.focused == true && !_.isUndefined(d.tfidf) && !_.isNaN(d.tfidf)) return d.tfidf;
+		return d.pageRank;
+	}
+
 	/*
  	Neue Knoten und links einblenden
  */
@@ -55996,14 +56087,14 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 		async.parallel([function (doneTransition) {
 			var n = 0;
 			var transition = elNew.labels.attr('transform', function (d) {
-				if (_.isNull(srcData)) return 'translate(' + (options.width + d.width) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';else return 'translate(' + srcData.x + ',' + srcData.y + ') scale(' + 0 + ')';
+				if (_.isNull(srcData)) return 'translate(' + (options.width + d.width) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';else return 'translate(' + srcData.x + ',' + srcData.y + ') scale(' + 0 + ')';
 			}).transition().duration(options.transitionAdd).delay(function (d, i) {
 				if (_.isNull(srcNode)) return 0;
 				return i * 50;
 			}).ease('bounce').attrTween('transform', function (d, i, a) {
 				var x = [options.width + d.width, d.x],
 				    y = [d.y, d.y],
-				    p = [d.pageRank / 2 + 0.75, d.pageRank / 2 + 0.75];
+				    p = [getScalingFactor(d) / 2 + 0.75, getScalingFactor(d) / 2 + 0.75];
 
 				if (!_.isNull(srcData)) {
 					x[0] = srcData.x;
@@ -56023,7 +56114,7 @@ module.exports = function (options, elNew, elExisting, renderGraph, node, label,
 		}, function (doneTransition) {
 			var n = 0;
 			var transition = elNew.nodes.attr('transform', function (d) {
-				return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (d.pageRank / 2 + 0.75) + ')';
+				return 'translate(' + Math.round(d.x) + ',' + Math.round(d.y) + ') scale(' + (getScalingFactor(d) / 2 + 0.75) + ')';
 			}).transition().duration(options.transitionAdd).attr('opacity', 1).each('end', function () {
 				if (transition.size() == ++n) doneTransition();
 			});

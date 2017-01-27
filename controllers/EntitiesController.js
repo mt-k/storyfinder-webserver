@@ -2,6 +2,7 @@ var _ = require('lodash')
 	, async = require('async')
 	, fs = require('fs')
 	, ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn
+	, evallog = new (require('../libs/evallog.js'))()
 	;
 	
 module.exports = function(connection, app, passport, io){
@@ -18,6 +19,8 @@ module.exports = function(connection, app, passport, io){
 		var search = req.query.q
 			, userId = req.user.id
 			;
+			
+		evallog.log('Search for ' + req.query.q);
 		
 		async.waterfall([
 			(next) => {setImmediate(() => next(null, {user_id: userId, search: search}))},
@@ -60,6 +63,8 @@ module.exports = function(connection, app, passport, io){
 			, userId = req.user.id
 			;
 
+		evallog.log('Load entity ' + entityId);
+
 		async.waterfall([
 			(next) => {setImmediate(() => next(null, {user_id: userId, entity_id: entityId}))},
 			_mGetCollection, //Get the id of user's default collection
@@ -83,6 +88,8 @@ module.exports = function(connection, app, passport, io){
 		var userId = req.user.id
 			, data = req.body
 			;
+			
+		evallog.log('Add new entity ' + JSON.stringify(req.body.data));
 
 		async.waterfall([
 			(next) => {setImmediate(() => next(null, {user_id: userId, data: data.data}))},
@@ -116,6 +123,8 @@ module.exports = function(connection, app, passport, io){
 			, sourceId = parseInt(req.params.sourceId)
 			, userId = req.user.id
 			;
+			
+		evallog.log('Merge entities ' + sourceId + ' to ' + targetId);
 
 		Entity.merge(targetId, sourceId, userId, (err, result) => {
 			if(err){
@@ -131,6 +140,8 @@ module.exports = function(connection, app, passport, io){
 		var entityId = req.params.entityId
 			, userId = req.user.id
 			;
+
+		evallog.log('Delete entity ' + entityId);
 
 		Entity.softdelete(entityId, userId, (err, result) => {
 			if(err){

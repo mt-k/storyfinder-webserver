@@ -85,6 +85,11 @@ module.exports = function(store){
 			}else{				
 				if(!_.isUndefined(focus) && focus){
 					nodes[indexMap[id]].focused = true;
+					if(!_.isUndefined(node.tfidf))
+						nodes[indexMap[id]].tfidf = node.tfidf;
+				}else{
+					if(!_.isUndefined(nodes[indexMap[id]].tfidf))
+						delete nodes[indexMap[id]].tfidf;
 				}
 			}
 		});
@@ -191,7 +196,10 @@ module.exports = function(store){
 		
 		_.each(graph.links, function(link){
 			var id = link.entity1_id + ',' + link.entity2_id;
-									
+			
+			link.entity1_id = parseInt(link.entity1_id);
+			link.entity2_id = parseInt(link.entity2_id);
+
 			if(!_.isUndefined(linksInGraph[id])){
 				linkIndex = linksInGraph[id];
 								
@@ -202,11 +210,13 @@ module.exports = function(store){
 				
 				return;	
 			}
+			/*console.log('Ok 2');
+			if(_.isUndefined(link.Relation) || _.isUndefined(link.Relationtype))
+				link.Relation.Relationtype = link.Relationtype;
+			console.log('Ok 3');
+			link = link.Relation;*/
 			
-			link.Relation.Relationtype = link.Relationtype;
-			link = link.Relation;
-			
-			if(_.isUndefined(indexMap[link.entity1_id]) || _.isUndefined(indexMap[link.entity2_id])){
+			if(_.isUndefined(indexMap[link.entity1_id]) || _.isUndefined(indexMap[link.entity2_id])){
 				return null;
 			}
 			
@@ -214,10 +224,10 @@ module.exports = function(store){
 				delete nodesWithoutLink[link.entity1_id];
 			if(!_.isUndefined(nodesWithoutLink[link.entity2_id]))
 				delete nodesWithoutLink[link.entity2_id];
-			
+						
 			if(_.isNull(firstNode))
 				firstNode = parseInt(indexMap[link.entity1_id]);
-	
+		
 			var n = links.length;
 	
 			links.push(_.defaults({
@@ -226,7 +236,7 @@ module.exports = function(store){
 				target: parseInt(indexMap[link.entity2_id]),
 				targetIdx: parseInt(indexMap[link.entity2_id])
 			}, link));		
-						
+					
 			if(_.isUndefined(lBN[link.entity1_id]))
 				lBN[link.entity1_id] = [];
 			lBN[link.entity1_id].push(link.entity2_id);
@@ -462,7 +472,16 @@ module.exports = function(store){
 		/*
 		Nur die #topNodes Top Knoten und davon jeweils die #leafs wichtigsten Nachbarn werden gerendert	
 		*/		
-		var pageRankByNode = _.map(nodes, 'pageRank');
+		var pageRankByNode = _.map(nodes, (node) => {
+			if(addFocus){				
+				if(!_.isUndefined(node.focused) && node.focused){
+					//console.log('calc', node.tfidf);
+					return node.tfidf;
+				}
+			}
+			
+			return node.pageRank;
+		});
 		
 		for(var i = 0;i < pageRankByNode.length; i++)
 			pageRankByNode[i] = {idx: i, pageRank: pageRankByNode[i]};
@@ -585,7 +604,11 @@ module.exports = function(store){
 						return -1;
 					else if(bFocused && !aFocused)
 						return 1;
+					if(aFocused && bFocused)
+						return b.tfidf - a.tfidf;
+						
 				}
+								
 				return b.pageRank - a.pageRank;
 			});
 			
@@ -799,7 +822,7 @@ module.exports = function(store){
 			tolerance = arguments[1];
 		if(arguments.length > 2 && !_.isNull(arguments[2]))
 			focused = arguments[2];
-			
+
 		var nodesForPagerank = []
 			, linksByNode = {}
 			;
